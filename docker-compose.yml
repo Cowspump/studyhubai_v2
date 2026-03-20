@@ -1,0 +1,41 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: studyhubai-db
+    restart: unless-stopped
+    env_file:
+      - .env.docker
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - studyhubai_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-studyhubai} -d ${POSTGRES_DB:-studyhubai}"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+  backend:
+    build:
+      context: ./backend
+    container_name: studyhubai-backend
+    restart: unless-stopped
+    env_file:
+      - backend/.env
+      - .env.docker
+    environment:
+      PGHOST: db
+      PGPORT: 5432
+      PGDATABASE: ${POSTGRES_DB:-studyhubai}
+      PGUSER: ${POSTGRES_USER:-studyhubai}
+      PGPASSWORD: ${POSTGRES_PASSWORD:-studyhubai_password}
+      PORT: ${BACKEND_PORT:-4000}
+      BACKEND_PUBLIC_URL: http://localhost:${BACKEND_PORT:-4000}
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "${BACKEND_PORT:-4000}:4000"
+
+volumes:
+  studyhubai_db_data:
