@@ -13,26 +13,54 @@ export default function TeacherHome() {
   const [apiStatus, setApiStatus] = useState('');
   const [stats, setStats] = useState({ groups: 0, students: 0, tests: 0, results: 0 });
   const [rating, setRating] = useState([]);
+  const [loadError, setLoadError] = useState('');
 
   useEffect(() => {
     async function load() {
-      try {
-        const [profileData, statsData, ratingData, keyData] = await Promise.all([
-          teacherApi.getProfile(),
-          teacherApi.getStats(),
-          teacherApi.getRating(),
-          teacherApi.getApiKey(),
-        ]);
-        setProfile(profileData);
-        setForm(profileData);
-        setStats(statsData);
-        setRating(ratingData);
-        setApiKeyState(keyData.openai_key || '');
-        setApiStatus(keyData.openai_key ? t('apiKeySet') : t('apiKeyNotSet'));
-      } catch { /* ignore */ }
+      const [profileResult, statsResult, ratingResult, keyResult] = await Promise.allSettled([
+        teacherApi.getProfile(),
+        teacherApi.getStats(),
+        teacherApi.getRating(),
+        teacherApi.getApiKey(),
+      ]);
+
+      const fallbackProfile = {
+        name: user?.name || '',
+        email: user?.email || '',
+        photo: user?.photo || '',
+        position: '',
+        phone: '',
+        telegram: '',
+        bio: '',
+      };
+
+      if (profileResult.status === 'fulfilled') {
+        setProfile(profileResult.value);
+        setForm(profileResult.value);
+      } else {
+        setProfile(fallbackProfile);
+        setForm(fallbackProfile);
+        setLoadError(t('infoUnavailable'));
+      }
+
+      if (statsResult.status === 'fulfilled') {
+        setStats(statsResult.value || { groups: 0, students: 0, tests: 0, results: 0 });
+      }
+
+      if (ratingResult.status === 'fulfilled') {
+        setRating(Array.isArray(ratingResult.value) ? ratingResult.value : []);
+      }
+
+      if (keyResult.status === 'fulfilled') {
+        const value = keyResult.value?.openai_key || '';
+        setApiKeyState(value);
+        setApiStatus(value ? t('apiKeySet') : t('apiKeyNotSet'));
+      } else {
+        setApiStatus(t('apiKeyNotSet'));
+      }
     }
     load();
-  }, [t]);
+  }, [t, user]);
 
   const handleSaveProfile = async (e) => {
     e.preventDefault();
@@ -79,6 +107,11 @@ export default function TeacherHome() {
   return (
     <>
       <h2>{t('teacherPanel')}</h2>
+      {loadError && (
+        <div className="card" style={{ borderLeft: '4px solid #f59e0b', marginBottom: '1rem' }}>
+          <p style={{ margin: 0, color: '#92400e' }}>{loadError}</p>
+        </div>
+      )}
 
       <div className="stats-grid">
         <div className="stat-card"><span className="stat-num">{stats.groups}</span><span className="stat-label">{t('groups')}</span></div>

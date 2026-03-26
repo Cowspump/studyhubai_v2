@@ -8,26 +8,48 @@ export default function StudentHome() {
   const { t } = useLang();
   const [profile, setProfile] = useState(null);
   const [teacher, setTeacher] = useState(null);
+  const [loadError, setLoadError] = useState('');
 
   useEffect(() => {
     async function load() {
-      try {
-        const [profileData, teacherData] = await Promise.all([
-          studentApi.getProfile(),
-          studentApi.getTeacher(),
-        ]);
-        setProfile(profileData);
-        setTeacher(teacherData);
-      } catch { /* ignore */ }
+      const [profileResult, teacherResult] = await Promise.allSettled([
+        studentApi.getProfile(),
+        studentApi.getTeacher(),
+      ]);
+
+      if (profileResult.status === 'fulfilled') {
+        setProfile(profileResult.value);
+      } else {
+        setProfile({
+          group_name: user?.group_name || '',
+          available_tests: 0,
+          submitted: 0,
+          average: 0,
+        });
+        setLoadError(t('infoUnavailable'));
+      }
+
+      if (teacherResult.status === 'fulfilled') {
+        setTeacher(teacherResult.value);
+      } else {
+        setTeacher(null);
+      }
     }
     load();
-  }, []);
+  }, [t, user]);
 
   if (!profile) return <p style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>{t('loading')}</p>;
 
+  const firstName = (user?.name || '').trim().split(' ').filter(Boolean)[0] || t('student');
+
   return (
     <>
-      <h2>{t('welcome')}, {user.name.split(' ')[0]}!</h2>
+      <h2>{t('welcome')}, {firstName}!</h2>
+      {loadError && (
+        <div className="card" style={{ borderLeft: '4px solid #f59e0b', marginBottom: '1rem' }}>
+          <p style={{ margin: 0, color: '#92400e' }}>{loadError}</p>
+        </div>
+      )}
 
       <div className="stats-grid">
         <div className="stat-card">

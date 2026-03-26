@@ -5,19 +5,27 @@ import { adminApi } from '../../utils/api';
 export default function AdminTeachers() {
   const { t } = useLang();
   const [teachers, setTeachers] = useState([]);
+  const [groups, setGroups] = useState([]);
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
   const [modal, setModal] = useState(null); // null | 'create' | 'edit'
   const [editingTeacher, setEditingTeacher] = useState(null);
   const [form, setForm] = useState({ name: '', email: '', password: '' });
   const [error, setError] = useState('');
+  const [assign, setAssign] = useState({ groupId: '', email: '' });
+  const [assignStatus, setAssignStatus] = useState('');
 
   const loadTeachers = useCallback(async () => {
     try {
-      const data = await adminApi.getTeachers();
-      setTeachers(data);
+      const [teachersData, groupsData] = await Promise.all([
+        adminApi.getTeachers(),
+        adminApi.getGroups(),
+      ]);
+      setTeachers(teachersData);
+      setGroups(groupsData);
     } catch {
       setTeachers([]);
+      setGroups([]);
     } finally {
       setLoading(false);
     }
@@ -88,6 +96,22 @@ export default function AdminTeachers() {
       loadTeachers();
     } catch (err) {
       alert(err.message);
+    }
+  };
+
+  const handleAssignStudentByEmail = async (e) => {
+    e.preventDefault();
+    setAssignStatus('');
+    if (!assign.groupId || !assign.email.trim()) {
+      setAssignStatus(t('adminFillAllFields'));
+      return;
+    }
+    try {
+      await adminApi.addStudentToGroupByEmail(parseInt(assign.groupId, 10), assign.email.trim());
+      setAssign({ groupId: assign.groupId, email: '' });
+      setAssignStatus(t('studentAssignedByEmailSuccess'));
+    } catch (err) {
+      setAssignStatus(err.message || t('infoUnavailable'));
     }
   };
 
@@ -166,6 +190,38 @@ export default function AdminTeachers() {
               </tbody>
             </table>
           </div>
+        )}
+      </div>
+
+      <div className="admin-card" style={{ marginTop: '1rem' }}>
+        <div className="admin-card-header" style={{ alignItems: 'flex-start', flexDirection: 'column', gap: 6 }}>
+          <h3 style={{ margin: 0 }}>{t('adminAssignStudentTitle')}</h3>
+          <p style={{ margin: 0, color: 'var(--text-muted)' }}>{t('adminAssignStudentDesc')}</p>
+        </div>
+        <form className="inline-form" onSubmit={handleAssignStudentByEmail} style={{ marginTop: '0.5rem' }}>
+          <select
+            value={assign.groupId}
+            onChange={(e) => setAssign((prev) => ({ ...prev, groupId: e.target.value }))}
+            required
+          >
+            <option value="">{t('selectGroup')}</option>
+            {groups.map((g) => (
+              <option key={g.id} value={g.id}>{g.teacher_name} - {g.name}</option>
+            ))}
+          </select>
+          <input
+            type="email"
+            value={assign.email}
+            onChange={(e) => setAssign((prev) => ({ ...prev, email: e.target.value }))}
+            placeholder={t('studentEmailPlaceholder')}
+            required
+          />
+          <button type="submit" className="btn btn-primary">{t('addStudentByEmail')}</button>
+        </form>
+        {assignStatus && (
+          <p style={{ marginTop: '0.75rem', marginBottom: 0, color: 'var(--text-muted)' }}>
+            {assignStatus}
+          </p>
         )}
       </div>
 

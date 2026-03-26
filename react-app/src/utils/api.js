@@ -121,6 +121,16 @@ export const adminApi = {
   getStats() {
     return apiRequest('/api/admin/stats', { headers: adminAuthHeaders() });
   },
+  getGroups() {
+    return apiRequest('/api/admin/groups', { headers: adminAuthHeaders() });
+  },
+  addStudentToGroupByEmail(groupId, email) {
+    return apiRequest(`/api/admin/groups/${groupId}/students/by-email`, {
+      method: 'POST',
+      headers: adminAuthHeaders(),
+      body: JSON.stringify({ email }),
+    });
+  },
 };
 
 // ── Public API ──────────────────────────────────────────
@@ -180,6 +190,13 @@ export const teacherApi = {
       method: 'POST',
       headers: authHeaders(),
       body: JSON.stringify({ group_id, students }),
+    });
+  },
+  addStudentByEmail(groupId, email) {
+    return apiRequest(`/api/teacher/groups/${groupId}/students/by-email`, {
+      method: 'POST',
+      headers: authHeaders(),
+      body: JSON.stringify({ email }),
     });
   },
   deleteStudent(id) {

@@ -9,7 +9,7 @@ from app.modules.users import repository as user_repo
 from app.modules.users.models import User
 from app.modules.users.schemas import ProfileUpdateRequest, ApiKeyUpdateRequest
 from app.modules.groups import repository as group_repo
-from app.modules.groups.schemas import GroupCreateRequest, BulkStudentsRequest
+from app.modules.groups.schemas import GroupCreateRequest, BulkStudentsRequest, StudentAssignByEmailRequest
 from app.modules.materials import repository as material_repo
 from app.modules.materials.schemas import MaterialCreateRequest
 from app.modules.tests import repository as test_repo
@@ -37,6 +37,25 @@ def _serialize_user(u):
         "bio": u.bio,
         "photo": u.photo,
     }
+
+
+def _serialize_student(u: User) -> dict:
+    return {
+        "id": u.id,
+        "name": u.name,
+        "email": u.email,
+        "role": u.role,
+        "group_id": u.group_id,
+    }
+
+
+async def _require_teacher_group(session: AsyncSession, teacher_id: int, group_id: int):
+    group = await group_repo.get_group_by_id(session, group_id)
+    if not group:
+        raise HTTPException(status_code=404, detail="Group not found")
+    if group.teacher_id != teacher_id:
+        raise HTTPException(status_code=403, detail="Group does not belong to current teacher")
+    return group
 
 
 # ── Profile ──────────────────────────────────────────────
@@ -126,6 +145,7 @@ async def delete_group(
     session: AsyncSession = Depends(get_session),
     current: dict = Depends(teacher_dep),
 ) -> None:
+    await _require_teacher_group(session, current["userId"], group_id)
     await group_repo.delete_group(session, group_id)
     await session.commit()
 
@@ -136,11 +156,9 @@ async def group_students(
     session: AsyncSession = Depends(get_session),
     current: dict = Depends(teacher_dep),
 ) -> list[dict]:
+    await _require_teacher_group(session, current["userId"], group_id)
     students = await user_repo.get_students_by_group(session, group_id)
-    return [
-        {"id": s.id, "name": s.name, "email": s.email, "group_id": s.group_id}
-        for s in students
-    ]
+    return [_serialize_student(s) for s in students]
 
 
 @router.post("/groups/bulk-students", status_code=201)
@@ -149,6 +167,7 @@ async def bulk_create_students(
     session: AsyncSession = Depends(get_session),
     current: dict = Depends(teacher_dep),
 ) -> list[dict]:
+    await _require_teacher_group(session, current["userId"], payload.group_id)
     created = []
     for s in payload.students:
         existing = await auth_repo.find_user_by_email(session, s["email"])
@@ -167,12 +186,43 @@ async def bulk_create_students(
     return created
 
 
+@router.post("/groups/{group_id}/students/by-email")
+async def add_existing_student_to_group_by_email(
+    group_id: int,
+    payload: StudentAssignByEmailRequest,
+    session: AsyncSession = Depends(get_session),
+    current: dict = Depends(teacher_dep),
+) -> dict:
+    group = await _require_teacher_group(session, current["userId"], group_id)
+    student = await user_repo.get_user_by_email(session, str(payload.email))
+    if not student:
+        raise HTTPException(status_code=404, detail="Student not found")
+    if student.role != "student":
+        raise HTTPException(status_code=400, detail="Provided email belongs to a non-student user")
+
+    await user_repo.assign_student_to_group(session, student.id, group.id)
+    await session.commit()
+
+    updated = await user_repo.get_user_by_id(session, student.id)
+    return {
+        **_serialize_student(updated),
+        "group_name": group.name,
+    }
+
+
 @router.delete("/students/{student_id}", status_code=204)
 async def delete_student(
     student_id: int,
     session: AsyncSession = Depends(get_session),
     current: dict = Depends(teacher_dep),
 ) -> None:
+    student = await user_repo.get_user_by_id(session, student_id)
+    if not student or student.role != "student":
+        raise HTTPException(status_code=404, detail="Student not found")
+    if student.group_id is None:
+        raise HTTPException(status_code=400, detail="Student is not assigned to a group")
+
+    await _require_teacher_group(session, current["userId"], student.group_id)
     await session.execute(
         sa_delete(User).where(User.id == student_id, User.role == "student")
     )

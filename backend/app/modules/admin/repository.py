@@ -3,6 +3,7 @@ from __future__ import annotations
 from sqlalchemy import delete, func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.modules.groups.models import Group
 from app.modules.users.models import User
 
 
@@ -76,3 +77,26 @@ async def get_platform_stats(session: AsyncSession) -> dict:
         "students": student_count or 0,
         "verified": verified_count or 0,
     }
+
+
+async def get_groups_with_teachers(session: AsyncSession) -> list[tuple[Group, User]]:
+    result = await session.execute(
+        select(Group, User)
+        .join(User, User.id == Group.teacher_id)
+        .order_by(User.name.asc(), Group.created_at.asc())
+    )
+    return list(result.all())
+
+
+async def get_group_with_teacher_by_id(
+    session: AsyncSession, group_id: int
+) -> tuple[Group, User] | None:
+    result = await session.execute(
+        select(Group, User)
+        .join(User, User.id == Group.teacher_id)
+        .where(Group.id == group_id)
+    )
+    row = result.first()
+    if not row:
+        return None
+    return row[0], row[1]

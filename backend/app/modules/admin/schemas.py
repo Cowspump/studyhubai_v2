@@ -38,3 +38,7 @@ class PlatformStatsResponse(BaseModel):
     teachers: int
     students: int
     verified: int
+
+
+class StudentAssignByEmailRequest(BaseModel):
+    email: EmailStr
