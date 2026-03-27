@@ -33,7 +33,7 @@ async def register_user(
     await auth_repo.store_verification_code(session, user_id=user.id, code=code)
     await session.commit()
 
-    send_verification_email(to_email=email, verification_code=code)
+    await send_verification_email(to_email=email, verification_code=code)
 
     return {
         "message": "User created. Verification email sent.",

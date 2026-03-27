@@ -27,7 +27,6 @@ class Settings:
     smtp_user: str
     smtp_pass: str
     smtp_from: str
-    resend_api_key: str
 
     database_url: str
 
@@ -49,7 +48,6 @@ settings = Settings(
     smtp_user=os.getenv("SMTP_USER", ""),
     smtp_pass=os.getenv("SMTP_PASS", ""),
     smtp_from=os.getenv("SMTP_FROM", "StudyHubAI <noreply@example.com>"),
-    resend_api_key=os.getenv("RESEND_API_KEY", ""),
     database_url=(
         f"postgresql+asyncpg://"
         f"{os.getenv('PGUSER', 'studyhubai')}:{os.getenv('PGPASSWORD', 'studyhubai_password')}"
