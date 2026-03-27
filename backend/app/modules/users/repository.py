@@ -12,11 +12,6 @@ async def get_user_by_id(session: AsyncSession, user_id: int) -> User | None:
     return result.scalar_one_or_none()
 
 
-async def get_user_by_email(session: AsyncSession, email: str) -> User | None:
-    normalized_email = email.strip().lower()
-    result = await session.execute(select(User).where(User.email == normalized_email))
-    return result.scalar_one_or_none()
-
 
 async def get_users_by_role(session: AsyncSession, role: str) -> list[User]:
     result = await session.execute(
@@ -38,13 +33,6 @@ async def update_user_profile(session: AsyncSession, user_id: int, **fields) -> 
         return
     await session.execute(update(User).where(User.id == user_id).values(**clean))
 
-
-async def assign_student_to_group(session: AsyncSession, student_id: int, group_id: int) -> None:
-    await session.execute(
-        update(User)
-        .where(User.id == student_id, User.role == "student")
-        .values(group_id=group_id)
-    )
 
 
 async def get_teacher_for_student(session: AsyncSession, group_id: int) -> User | None:

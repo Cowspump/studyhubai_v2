@@ -1,4 +1,4 @@
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel
 
 
 class GroupCreateRequest(BaseModel):
@@ -10,5 +10,3 @@ class BulkStudentsRequest(BaseModel):
     students: list[dict]  # [{name, email, password}]
 
 
-class StudentAssignByEmailRequest(BaseModel):
-    email: EmailStr

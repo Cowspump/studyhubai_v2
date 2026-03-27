@@ -6,7 +6,6 @@ from app.shared.core.exceptions import ApiError
 from app.shared.core.security import hash_password
 from app.modules.admin import repository as admin_repo
 from app.modules.auth import repository as auth_repo
-from app.modules.users import repository as user_repo
 
 
 async def list_teachers(session: AsyncSession) -> list[dict]:

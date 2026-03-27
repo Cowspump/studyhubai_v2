@@ -40,5 +40,3 @@ class PlatformStatsResponse(BaseModel):
     verified: int
 
 
-class StudentAssignByEmailRequest(BaseModel):
-    email: EmailStr
