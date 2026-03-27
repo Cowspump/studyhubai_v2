@@ -35,6 +35,7 @@ def _send_via_resend(to_email: str, verification_code: str) -> None:
         headers={
             "Authorization": f"Bearer {settings.resend_api_key}",
             "Content-Type": "application/json",
+            "User-Agent": "StudyHubAI/1.0",
         },
         method="POST",
     )
