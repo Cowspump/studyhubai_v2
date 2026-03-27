@@ -966,6 +966,31 @@
   text-align: center;
 }
 
+.ld-role-toggle {
+  display: flex;
+  gap: 0;
+  border: 1.5px solid var(--ld-gray-200);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.ld-role-btn {
+  flex: 1;
+  padding: 10px;
+  border: none;
+  background: var(--ld-bg);
+  font-size: 0.9rem;
+  cursor: pointer;
+  color: var(--ld-text-muted);
+  transition: all 0.2s;
+}
+
+.ld-role-btn.active {
+  background: var(--ld-primary);
+  color: #fff;
+  font-weight: 600;
+}
+
 /* ===== Responsive ===== */
 @media (max-width: 1024px) {
   .ld-features-grid { grid-template-columns: repeat(2, 1fr); }

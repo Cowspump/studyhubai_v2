@@ -12,8 +12,6 @@ export default function AdminTeachers() {
   const [editingTeacher, setEditingTeacher] = useState(null);
   const [form, setForm] = useState({ name: '', email: '', password: '' });
   const [error, setError] = useState('');
-  const [assign, setAssign] = useState({ groupId: '', email: '' });
-  const [assignStatus, setAssignStatus] = useState('');
 
   const loadTeachers = useCallback(async () => {
     try {
@@ -99,21 +97,6 @@ export default function AdminTeachers() {
     }
   };
 
-  const handleAssignStudentByEmail = async (e) => {
-    e.preventDefault();
-    setAssignStatus('');
-    if (!assign.groupId || !assign.email.trim()) {
-      setAssignStatus(t('adminFillAllFields'));
-      return;
-    }
-    try {
-      await adminApi.addStudentToGroupByEmail(parseInt(assign.groupId, 10), assign.email.trim());
-      setAssign({ groupId: assign.groupId, email: '' });
-      setAssignStatus(t('studentAssignedByEmailSuccess'));
-    } catch (err) {
-      setAssignStatus(err.message || t('infoUnavailable'));
-    }
-  };
 
   if (loading) {
     return <p style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>{t('loading')}</p>;
@@ -190,38 +173,6 @@ export default function AdminTeachers() {
               </tbody>
             </table>
           </div>
-        )}
-      </div>
-
-      <div className="admin-card" style={{ marginTop: '1rem' }}>
-        <div className="admin-card-header" style={{ alignItems: 'flex-start', flexDirection: 'column', gap: 6 }}>
-          <h3 style={{ margin: 0 }}>{t('adminAssignStudentTitle')}</h3>
-          <p style={{ margin: 0, color: 'var(--text-muted)' }}>{t('adminAssignStudentDesc')}</p>
-        </div>
-        <form className="inline-form" onSubmit={handleAssignStudentByEmail} style={{ marginTop: '0.5rem' }}>
-          <select
-            value={assign.groupId}
-            onChange={(e) => setAssign((prev) => ({ ...prev, groupId: e.target.value }))}
-            required
-          >
-            <option value="">{t('selectGroup')}</option>
-            {groups.map((g) => (
-              <option key={g.id} value={g.id}>{g.teacher_name} - {g.name}</option>
-            ))}
-          </select>
-          <input
-            type="email"
-            value={assign.email}
-            onChange={(e) => setAssign((prev) => ({ ...prev, email: e.target.value }))}
-            placeholder={t('studentEmailPlaceholder')}
-            required
-          />
-          <button type="submit" className="btn btn-primary">{t('addStudentByEmail')}</button>
-        </form>
-        {assignStatus && (
-          <p style={{ marginTop: '0.75rem', marginBottom: 0, color: 'var(--text-muted)' }}>
-            {assignStatus}
-          </p>
         )}
       </div>
 

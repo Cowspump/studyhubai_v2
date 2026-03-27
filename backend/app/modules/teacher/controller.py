@@ -9,7 +9,7 @@ from app.modules.users import repository as user_repo
 from app.modules.users.models import User
 from app.modules.users.schemas import ProfileUpdateRequest, ApiKeyUpdateRequest
 from app.modules.groups import repository as group_repo
-from app.modules.groups.schemas import GroupCreateRequest, BulkStudentsRequest, StudentAssignByEmailRequest
+from app.modules.groups.schemas import GroupCreateRequest, BulkStudentsRequest
 from app.modules.materials import repository as material_repo
 from app.modules.materials.schemas import MaterialCreateRequest
 from app.modules.tests import repository as test_repo
@@ -185,29 +185,6 @@ async def bulk_create_students(
     await session.commit()
     return created
 
-
-@router.post("/groups/{group_id}/students/by-email")
-async def add_existing_student_to_group_by_email(
-    group_id: int,
-    payload: StudentAssignByEmailRequest,
-    session: AsyncSession = Depends(get_session),
-    current: dict = Depends(teacher_dep),
-) -> dict:
-    group = await _require_teacher_group(session, current["userId"], group_id)
-    student = await user_repo.get_user_by_email(session, str(payload.email))
-    if not student:
-        raise HTTPException(status_code=404, detail="Student not found")
-    if student.role != "student":
-        raise HTTPException(status_code=400, detail="Provided email belongs to a non-student user")
-
-    await user_repo.assign_student_to_group(session, student.id, group.id)
-    await session.commit()
-
-    updated = await user_repo.get_user_by_id(session, student.id)
-    return {
-        **_serialize_student(updated),
-        "group_name": group.name,
-    }
 
 
 @router.delete("/students/{student_id}", status_code=204)

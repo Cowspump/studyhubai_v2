@@ -99,31 +99,3 @@ async def list_teacher_groups(session: AsyncSession) -> list[dict]:
     ]
 
 
-async def assign_student_to_group_by_email(
-    session: AsyncSession, group_id: int, email: str
-) -> dict:
-    pair = await admin_repo.get_group_with_teacher_by_id(session, group_id)
-    if not pair:
-        raise ApiError(status_code=404, detail="Group not found")
-
-    group, teacher = pair
-    student = await auth_repo.find_user_by_email(session, email.strip().lower())
-    if not student:
-        raise ApiError(status_code=404, detail="Student not found")
-    if student.role != "student":
-        raise ApiError(status_code=400, detail="Provided email belongs to a non-student user")
-
-    await user_repo.assign_student_to_group(session, student.id, group.id)
-    await session.commit()
-
-    updated = await user_repo.get_user_by_id(session, student.id)
-    return {
-        "id": updated.id,
-        "name": updated.name,
-        "email": updated.email,
-        "role": updated.role,
-        "group_id": updated.group_id,
-        "group_name": group.name,
-        "teacher_id": teacher.id,
-        "teacher_name": teacher.name,
-    }

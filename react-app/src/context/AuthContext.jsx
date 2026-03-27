@@ -34,9 +34,9 @@ export function AuthProvider({ children }) {
     }
   }, []);
 
-  const register = useCallback(async (name, email, password, group_id) => {
+  const register = useCallback(async (name, email, password, role, group_id) => {
     try {
-      await authApi.register({ name, email, password, role: 'student', group_id });
+      await authApi.register({ name, email, password, role, group_id: role === 'student' ? group_id : undefined });
       return { success: true };
     } catch (err) {
       return { error: err.message || 'Registration failed' };
@@ -45,8 +45,10 @@ export function AuthProvider({ children }) {
 
   const verifyEmailCode = useCallback(async (email, code) => {
     try {
-      await authApi.verifyEmailCode({ email, code });
-      return { success: true };
+      const data = await authApi.verifyEmailCode({ email, code });
+      setAuthToken(data.token);
+      persistUser(data.user);
+      return { success: true, user: data.user };
     } catch (err) {
       return { error: err.message || 'Verification failed' };
     }

@@ -67,7 +67,17 @@ async def verify_email_code(session: AsyncSession, email: str, code: str):
     await auth_repo.mark_user_verified(session, user_id=token_row.user_id)
     await session.commit()
 
-    return {"message": "Email verified successfully"}
+    token = create_jwt(user_id=user.id, email=user.email, role=user.role)
+    return {
+        "token": token,
+        "user": {
+            "id": user.id,
+            "name": user.name,
+            "email": user.email,
+            "role": user.role,
+            "group_id": user.group_id,
+        },
+    }
 
 
 async def login_user(session: AsyncSession, email: str, password: str):

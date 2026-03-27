@@ -8,9 +8,6 @@ export default function TeacherGroups() {
   const [groups, setGroups] = useState([]);
   const [studentsMap, setStudentsMap] = useState({});
   const [groupName, setGroupName] = useState('');
-  const [assignGroupId, setAssignGroupId] = useState('');
-  const [assignEmail, setAssignEmail] = useState('');
-  const [assignStatus, setAssignStatus] = useState({ type: '', message: '' });
   const [bulkGroup, setBulkGroup] = useState('');
   const [bulkNames, setBulkNames] = useState('');
   const [createdAccounts, setCreatedAccounts] = useState([]);
@@ -53,23 +50,6 @@ export default function TeacherGroups() {
     } catch { /* ignore */ }
   };
 
-  const handleAssignByEmail = async (e) => {
-    e.preventDefault();
-    setAssignStatus({ type: '', message: '' });
-    if (!assignGroupId || !assignEmail.trim()) {
-      setAssignStatus({ type: 'error', message: t('adminFillAllFields') });
-      return;
-    }
-
-    try {
-      await teacherApi.addStudentByEmail(parseInt(assignGroupId, 10), assignEmail.trim());
-      setAssignStatus({ type: 'success', message: t('studentAssignedByEmailSuccess') });
-      setAssignEmail('');
-      await loadData();
-    } catch (err) {
-      setAssignStatus({ type: 'error', message: err.message || t('infoUnavailable') });
-    }
-  };
 
   const handleBulkAdd = async (e) => {
     e.preventDefault();
@@ -130,34 +110,6 @@ export default function TeacherGroups() {
 
       <div className="card form-card">
         <h3>{t('addStudents')}</h3>
-          <form className="inline-form" onSubmit={handleAssignByEmail} style={{ marginBottom: '1rem' }}>
-            <select value={assignGroupId} onChange={(e) => setAssignGroupId(e.target.value)} required>
-              <option value="">{t('selectGroup')}</option>
-              {groups.map((g) => (
-                <option key={g.id} value={g.id}>{g.name}</option>
-              ))}
-            </select>
-            <input
-              type="email"
-              placeholder={t('studentEmailPlaceholder')}
-              value={assignEmail}
-              onChange={(e) => setAssignEmail(e.target.value)}
-              required
-            />
-            <button type="submit" className="btn btn-primary">{t('addStudentByEmail')}</button>
-          </form>
-          {assignStatus.message && (
-            <p
-              className={assignStatus.type === 'error' ? 'error-msg' : ''}
-              style={{
-                marginTop: '-0.25rem',
-                marginBottom: '0.75rem',
-                color: assignStatus.type === 'success' ? 'var(--success)' : undefined,
-              }}
-            >
-              {assignStatus.message}
-            </p>
-          )}
         <form onSubmit={handleBulkAdd}>
           <select value={bulkGroup} onChange={(e) => setBulkGroup(e.target.value)} required>
             <option value="">{t('selectGroup')}</option>

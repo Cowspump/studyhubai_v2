@@ -70,6 +70,7 @@ function AuthModal({ isOpen, onClose, initialTab }) {
   const [regName, setRegName] = useState('');
   const [regEmail, setRegEmail] = useState('');
   const [regPass, setRegPass] = useState('');
+  const [regRole, setRegRole] = useState('student');
   const [regGroup, setRegGroup] = useState('');
   const [regError, setRegError] = useState('');
   const [pendingVerificationEmail, setPendingVerificationEmail] = useState('');
@@ -111,7 +112,7 @@ function AuthModal({ isOpen, onClose, initialTab }) {
     setRegError('');
     setVerifyError('');
     setVerifyInfo('');
-    const res = await register(regName, regEmail, regPass, regGroup);
+    const res = await register(regName, regEmail, regPass, regRole, regGroup);
     if (res?.error) {
       setRegError(mapAuthError(res.error, t('loginError')));
     } else {
@@ -132,7 +133,8 @@ function AuthModal({ isOpen, onClose, initialTab }) {
       return;
     }
 
-    setVerifyInfo(t('authVerificationSuccess'));
+    onClose();
+    navigate(res.user.role === 'teacher' ? '/teacher' : '/student');
   };
 
   const switchTab = (tab) => {
@@ -233,12 +235,30 @@ function AuthModal({ isOpen, onClose, initialTab }) {
                   required
                   minLength={6}
                 />
-                <select value={regGroup} onChange={(e) => setRegGroup(e.target.value)} required>
-                  <option value="">{t('selectGroup')}</option>
-                  {groups.map((g) => (
-                    <option key={g.id} value={g.id}>{g.name}</option>
-                  ))}
-                </select>
+                <div className="ld-role-toggle">
+                  <button
+                    type="button"
+                    className={`ld-role-btn ${regRole === 'student' ? 'active' : ''}`}
+                    onClick={() => setRegRole('student')}
+                  >
+                    {t('student')}
+                  </button>
+                  <button
+                    type="button"
+                    className={`ld-role-btn ${regRole === 'teacher' ? 'active' : ''}`}
+                    onClick={() => setRegRole('teacher')}
+                  >
+                    {t('teacher')}
+                  </button>
+                </div>
+                {regRole === 'student' && (
+                  <select value={regGroup} onChange={(e) => setRegGroup(e.target.value)} required>
+                    <option value="">{t('selectGroup')}</option>
+                    {groups.map((g) => (
+                      <option key={g.id} value={g.id}>{g.name}</option>
+                    ))}
+                  </select>
+                )}
                 <button type="submit" className="ld-btn ld-btn-primary ld-btn-full">{t('register')}</button>
                 {regError && <p className="ld-modal-error">{regError}</p>}
 

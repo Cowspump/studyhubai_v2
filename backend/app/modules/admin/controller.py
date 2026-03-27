@@ -5,7 +5,7 @@ from app.shared.core.deps import require_role
 from app.shared.core.exceptions import ApiError
 from app.shared.core.security import create_jwt
 from app.shared.db import get_session
-from app.modules.admin.schemas import AdminLoginRequest, TeacherCreateRequest, TeacherUpdateRequest, StudentAssignByEmailRequest
+from app.modules.admin.schemas import AdminLoginRequest, TeacherCreateRequest, TeacherUpdateRequest
 from app.modules.admin import service as admin_service
 
 router = APIRouter(prefix="/api/admin", tags=["admin"])
@@ -100,16 +100,3 @@ async def list_groups(
     return await admin_service.list_teacher_groups(session)
 
 
-@router.post("/groups/{group_id}/students/by-email")
-async def assign_student_to_group_by_email(
-    group_id: int,
-    payload: StudentAssignByEmailRequest,
-    session: AsyncSession = Depends(get_session),
-    _user: dict = Depends(superadmin),
-) -> dict:
-    try:
-        return await admin_service.assign_student_to_group_by_email(
-            session, group_id=group_id, email=str(payload.email)
-        )
-    except ApiError as exc:
-        raise HTTPException(status_code=exc.status_code, detail=exc.detail) from exc
