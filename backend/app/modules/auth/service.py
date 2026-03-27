@@ -1,9 +1,13 @@
+import logging
+
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.shared.core.exceptions import ApiError
 from app.shared.core.mailer import send_verification_email
 from app.shared.core.security import create_jwt, generate_verification_code, hash_password, verify_password
 from app.modules.auth import repository as auth_repo
+
+logger = logging.getLogger(__name__)
 
 
 async def register_user(
@@ -33,7 +37,10 @@ async def register_user(
     await auth_repo.store_verification_code(session, user_id=user.id, code=code)
     await session.commit()
 
-    await send_verification_email(to_email=email, verification_code=code)
+    try:
+        await send_verification_email(to_email=email, verification_code=code)
+    except Exception as exc:
+        logger.error("Failed to send email to %s: %s. Code: %s", email, exc, code)
 
     return {
         "message": "User created. Verification email sent.",
