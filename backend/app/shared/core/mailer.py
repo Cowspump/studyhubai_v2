@@ -38,7 +38,11 @@ def _send_via_resend(to_email: str, verification_code: str) -> None:
         },
         method="POST",
     )
-    urllib.request.urlopen(req)
+    try:
+        urllib.request.urlopen(req)
+    except urllib.error.HTTPError as e:
+        body = e.read().decode()
+        raise RuntimeError(f"Resend API error {e.code}: {body}") from e
 
 
 def _send_via_smtp(to_email: str, verification_code: str) -> None:
