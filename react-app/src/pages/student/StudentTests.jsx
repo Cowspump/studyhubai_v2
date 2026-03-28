@@ -2,12 +2,14 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLang } from '../../context/LanguageContext';
 import { studentApi } from '../../utils/api';
+import Spinner from '../../components/Spinner';
 
 export default function StudentTests() {
   const { t } = useLang();
   const navigate = useNavigate();
   const [tests, setTests] = useState([]);
   const [results, setResults] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function load() {
@@ -18,10 +20,14 @@ export default function StudentTests() {
         ]);
         setTests(testsData);
         setResults(resultsData);
-      } catch { /* ignore */ }
+      } catch { /* ignore */ } finally {
+        setLoading(false);
+      }
     }
     load();
   }, []);
+
+  if (loading) return <Spinner />;
 
   return (
     <div className="tests-section">

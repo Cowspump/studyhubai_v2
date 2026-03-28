@@ -2,14 +2,19 @@ import { useState, useEffect } from 'react';
 import { useLang } from '../../context/LanguageContext';
 import { studentApi } from '../../utils/api';
 import MaterialModal from '../../components/MaterialModal';
+import Spinner from '../../components/Spinner';
 
 export default function StudentMaterials() {
   const { t } = useLang();
   const [materials, setMaterials] = useState([]);
   const [previewMaterial, setPreviewMaterial] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    studentApi.getMaterials().then(setMaterials).catch(() => setMaterials([]));
+    studentApi.getMaterials()
+      .then(setMaterials)
+      .catch(() => setMaterials([]))
+      .finally(() => setLoading(false));
   }, []);
 
   const typeIcon = { pdf: '📄', video: '🎬', link: '🔗', file: '📁' };
@@ -19,6 +24,8 @@ export default function StudentMaterials() {
     if (!byTopic[m.topic]) byTopic[m.topic] = [];
     byTopic[m.topic].push(m);
   });
+
+  if (loading) return <Spinner />;
 
   return (
     <div className="materials-section">

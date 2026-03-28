@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useLang } from '../../context/LanguageContext';
 import { studentApi } from '../../utils/api';
+import Spinner from '../../components/Spinner';
 
 export default function StudentHome() {
   const { user } = useAuth();
@@ -38,7 +39,7 @@ export default function StudentHome() {
     load();
   }, [t, user]);
 
-  if (!profile) return <p style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>{t('loading')}</p>;
+  if (!profile) return <Spinner />;
 
   const firstName = (user?.name || '').trim().split(' ').filter(Boolean)[0] || t('student');
 

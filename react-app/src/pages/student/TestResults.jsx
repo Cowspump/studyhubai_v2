@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useLang } from '../../context/LanguageContext';
 import { studentApi } from '../../utils/api';
 import { explainAnswer } from '../../utils/openai';
+import Spinner from '../../components/Spinner';
 
 const LETTERS = ['A', 'B', 'C', 'D'];
 
@@ -29,13 +30,7 @@ export default function TestResults() {
     load();
   }, [testId]);
 
-  if (!data) {
-    return (
-      <div className="test-taking">
-        <p>{t('loading')}</p>
-      </div>
-    );
-  }
+  if (!data) return <Spinner />;
 
   const { test, result } = data;
   const { answers: userAnswers, score } = result;

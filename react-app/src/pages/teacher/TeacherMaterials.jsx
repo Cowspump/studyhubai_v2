@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useLang } from '../../context/LanguageContext';
 import { teacherApi } from '../../utils/api';
 import MaterialModal from '../../components/MaterialModal';
+import Spinner from '../../components/Spinner';
 
 export default function TeacherMaterials() {
   const { t } = useLang();
@@ -14,6 +15,7 @@ export default function TeacherMaterials() {
   const [file, setFile] = useState(null);
   const [selectedGroups, setSelectedGroups] = useState([]);
   const [previewMaterial, setPreviewMaterial] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   const typeIcon = { pdf: '📄', video: '🎬', link: '🔗', file: '📁' };
 
@@ -25,7 +27,9 @@ export default function TeacherMaterials() {
       ]);
       setMaterials(mats);
       setGroups(grps);
-    } catch { /* ignore */ }
+    } catch { /* ignore */ } finally {
+      setLoading(false);
+    }
   }, []);
 
   useEffect(() => { loadData(); }, [loadData]);
@@ -75,6 +79,8 @@ export default function TeacherMaterials() {
       loadData();
     } catch { /* ignore */ }
   };
+
+  if (loading) return <Spinner />;
 
   return (
     <div className="materials-section">

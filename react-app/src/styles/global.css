@@ -638,6 +638,27 @@ details summary { cursor: pointer; color: var(--primary); font-weight: 500; padd
 h2 { margin-bottom: 1.5rem; }
 h3 { margin-bottom: 0.75rem; }
 
+/* === Spinner === */
+.spinner-wrapper {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 3rem;
+}
+
+.spinner {
+  width: 36px;
+  height: 36px;
+  border: 3px solid var(--border);
+  border-top-color: var(--primary);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
 /* === Responsive === */
 @media (max-width: 768px) {
   .dashboard { flex-direction: column; }

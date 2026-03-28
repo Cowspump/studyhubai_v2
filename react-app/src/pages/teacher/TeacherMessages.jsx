@@ -3,12 +3,14 @@ import { useAuth } from '../../context/AuthContext';
 import { useLang } from '../../context/LanguageContext';
 import { teacherApi } from '../../utils/api';
 import { getInitials, formatTime } from '../../utils/helpers';
+import Spinner from '../../components/Spinner';
 
 export default function TeacherMessages() {
   const { user } = useAuth();
   const { t } = useLang();
   const [selectedId, setSelectedId] = useState(null);
   const [msgText, setMsgText] = useState('');
+  const [loading, setLoading] = useState(true);
   const [conversations, setConversations] = useState([]);
   const [allStudents, setAllStudents] = useState([]);
   const [chatMsgs, setChatMsgs] = useState([]);
@@ -22,7 +24,9 @@ export default function TeacherMessages() {
       ]);
       setConversations(convos);
       setAllStudents(students);
-    } catch { /* ignore */ }
+    } catch { /* ignore */ } finally {
+      setLoading(false);
+    }
   }, []);
 
   useEffect(() => { loadConversations(); }, [loadConversations]);
@@ -59,6 +63,8 @@ export default function TeacherMessages() {
   // Students without conversations
   const convoPartnerIds = new Set(conversations.map((c) => c.partner_id));
   const studentsWithoutConvo = allStudents.filter((s) => !convoPartnerIds.has(s.id));
+
+  if (loading) return <Spinner />;
 
   return (
     <div className="messages-section">

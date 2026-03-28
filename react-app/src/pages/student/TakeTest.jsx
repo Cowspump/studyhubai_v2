@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useLang } from '../../context/LanguageContext';
 import { studentApi } from '../../utils/api';
+import Spinner from '../../components/Spinner';
 
 const LETTERS = ['A', 'B', 'C', 'D'];
 
@@ -16,7 +17,7 @@ export default function TakeTest() {
     studentApi.getTest(testId).then(setTest).catch(() => setTest(null));
   }, [testId]);
 
-  if (!test) return <p>{t('loading')}</p>;
+  if (!test) return <Spinner />;
 
   const total = test.questions.length;
   const answeredCount = Object.keys(answers).length;

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useLang } from '../../context/LanguageContext';
 import { teacherApi } from '../../utils/api';
 import { generateTest } from '../../utils/openai';
+import Spinner from '../../components/Spinner';
 
 export default function TeacherTests() {
   const navigate = useNavigate();
@@ -17,6 +18,8 @@ export default function TeacherTests() {
   const [testTitle, setTestTitle] = useState('');
   const [testGroups, setTestGroups] = useState([]);
   const [questions, setQuestions] = useState([{ q: '', opts: ['', '', '', ''], answer: 0 }]);
+
+  const [loading, setLoading] = useState(true);
 
   // AI form
   const [aiLecture, setAiLecture] = useState('');
@@ -44,7 +47,9 @@ export default function TeacherTests() {
         rMap[tt.id] = await teacherApi.getTestResults(tt.id);
       }
       setResultsMap(rMap);
-    } catch { /* ignore */ }
+    } catch { /* ignore */ } finally {
+      setLoading(false);
+    }
   }, []);
 
   useEffect(() => { loadData(); }, [loadData]);
@@ -109,6 +114,8 @@ export default function TeacherTests() {
       setAiLoading(false);
     }
   };
+
+  if (loading) return <Spinner />;
 
   return (
     <div className="tests-section">

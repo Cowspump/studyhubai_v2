@@ -2,11 +2,13 @@ import { useState, useEffect, useCallback } from 'react';
 import { useLang } from '../../context/LanguageContext';
 import { teacherApi } from '../../utils/api';
 import { transliterate, generatePassword } from '../../utils/helpers';
+import Spinner from '../../components/Spinner';
 
 export default function TeacherGroups() {
   const { t } = useLang();
   const [groups, setGroups] = useState([]);
   const [studentsMap, setStudentsMap] = useState({});
+  const [loading, setLoading] = useState(true);
   const [groupName, setGroupName] = useState('');
   const [bulkGroup, setBulkGroup] = useState('');
   const [bulkNames, setBulkNames] = useState('');
@@ -22,7 +24,9 @@ export default function TeacherGroups() {
         map[g.id] = await teacherApi.getGroupStudents(g.id);
       }
       setStudentsMap(map);
-    } catch { /* ignore */ }
+    } catch { /* ignore */ } finally {
+      setLoading(false);
+    }
   }, []);
 
   useEffect(() => { loadData(); }, [loadData]);
@@ -89,6 +93,8 @@ export default function TeacherGroups() {
       setTimeout(() => setCopyText(t('copyTable')), 2000);
     });
   };
+
+  if (loading) return <Spinner />;
 
   return (
     <>

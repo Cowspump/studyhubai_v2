@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useLang } from '../../context/LanguageContext';
 import { adminApi } from '../../utils/api';
+import Spinner from '../../components/Spinner';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, Legend,
@@ -34,9 +35,7 @@ export default function AdminAnalytics() {
     load();
   }, []);
 
-  if (loading) {
-    return <p style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>{t('loading')}</p>;
-  }
+  if (loading) return <Spinner />;
 
   // Pie chart data: verified vs unverified
   const verifiedData = [

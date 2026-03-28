@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useLang } from '../../context/LanguageContext';
 import { teacherApi } from '../../utils/api';
+import Spinner from '../../components/Spinner';
 
 export default function TeacherHome() {
   const { user, updateUser } = useAuth();
@@ -102,7 +103,7 @@ export default function TeacherHome() {
     return <span style={{ background: '#fef2f2', color: '#991b1b', padding: '2px 10px', borderRadius: 20, fontSize: '0.8rem', fontWeight: 600 }}>{t('levelNeedHelp')}</span>;
   };
 
-  if (!profile) return <p style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>{t('loading')}</p>;
+  if (!profile) return <Spinner />;
 
   return (
     <>

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useLang } from '../../context/LanguageContext';
 import { adminApi } from '../../utils/api';
+import Spinner from '../../components/Spinner';
 
 export default function AdminHome() {
   const { t } = useLang();
@@ -28,9 +29,7 @@ export default function AdminHome() {
     load();
   }, []);
 
-  if (loading) {
-    return <p style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>{t('loading')}</p>;
-  }
+  if (loading) return <Spinner />;
 
   return (
     <>
