@@ -216,6 +216,9 @@ export const teacherApi = {
   getMaterials() {
     return apiRequest('/api/teacher/materials', { headers: authHeaders() });
   },
+  getMaterialUrl(id) {
+    return apiRequest(`/api/teacher/materials/${id}/url`, { headers: authHeaders() });
+  },
   uploadMaterialFile(file) {
     const formData = new FormData();
     formData.append('file', file);
@@ -316,6 +319,9 @@ export const studentApi = {
   // Materials
   getMaterials() {
     return apiRequest('/api/student/materials', { headers: authHeaders() });
+  },
+  getMaterialUrl(id) {
+    return apiRequest(`/api/student/materials/${id}/url`, { headers: authHeaders() });
   },
 
   // Tests

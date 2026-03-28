@@ -101,7 +101,8 @@ export default function TeacherTests() {
     setAiStatus(t('aiGenerating'));
 
     try {
-      const generatedQuestions = await generateTest(aiLecture, aiNumQ, apiKey);
+      const { url: lectureUrl } = await teacherApi.getMaterialUrl(parseInt(aiLecture));
+      const generatedQuestions = await generateTest(lectureUrl, aiNumQ, apiKey);
       const title = aiTitle || t('aiTestDefault');
 
       // Pass data via state to preview page
@@ -129,7 +130,7 @@ export default function TeacherTests() {
           <select value={aiLecture} onChange={(e) => setAiLecture(e.target.value)} required>
             <option value="">{t('chooseLecture')}</option>
             {materials.map((m) => (
-              <option key={m.id} value={m.url}>{m.title}</option>
+              <option key={m.id} value={m.id}>{m.title}</option>
             ))}
           </select>
           <label>{t('questionCount')}</label>

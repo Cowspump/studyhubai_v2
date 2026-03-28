@@ -91,7 +91,7 @@ async def list_materials(
                 "topic": m.topic,
                 "title": m.title,
                 "type": m.type,
-                "url": m.url,
+                "url": m.url if m.type == "video" else None,
                 "file_name": m.file_name,
                 "group_ids": m.group_ids,
             }
@@ -101,6 +101,18 @@ async def list_materials(
         "skip": skip,
         "limit": limit,
     }
+
+
+@router.get("/materials/{material_id}/url")
+async def get_material_url(
+    material_id: int,
+    session: AsyncSession = Depends(get_session),
+    current: dict = Depends(student_dep),
+) -> dict:
+    mat = await material_repo.get_material_by_id(session, material_id)
+    if not mat:
+        raise HTTPException(status_code=404, detail="Material not found")
+    return {"url": mat.url, "file_name": mat.file_name}
 
 
 # ── Tests ────────────────────────────────────────────────

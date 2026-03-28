@@ -74,6 +74,13 @@ export default function TeacherMaterials() {
     }
   };
 
+  const openMaterial = async (m) => {
+    try {
+      const { url: materialUrl, file_name } = await teacherApi.getMaterialUrl(m.id);
+      setPreviewMaterial({ ...m, url: materialUrl, file_name: file_name || m.file_name });
+    } catch { /* ignore */ }
+  };
+
   const handleDelete = async (id) => {
     try {
       await teacherApi.deleteMaterial(id);
@@ -144,7 +151,7 @@ export default function TeacherMaterials() {
                     <iframe src={m.url} allowFullScreen title={m.title} />
                   </div>
                 ) : (
-                  <button className="btn btn-sm" onClick={() => setPreviewMaterial(m)}>{t('open')}</button>
+                  <button className="btn btn-sm" onClick={() => openMaterial(m)}>{t('open')}</button>
                 )}
                 <button className="btn btn-danger btn-sm" onClick={() => handleDelete(m.id)}>{t('delete')}</button>
               </div>

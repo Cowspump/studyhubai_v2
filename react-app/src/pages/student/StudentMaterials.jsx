@@ -25,6 +25,13 @@ export default function StudentMaterials() {
     byTopic[m.topic].push(m);
   });
 
+  const openMaterial = async (m) => {
+    try {
+      const { url: materialUrl, file_name } = await studentApi.getMaterialUrl(m.id);
+      setPreviewMaterial({ ...m, url: materialUrl, file_name: file_name || m.file_name });
+    } catch { /* ignore */ }
+  };
+
   if (loading) return <Spinner />;
 
   return (
@@ -49,7 +56,7 @@ export default function StudentMaterials() {
                     <iframe src={m.url} allowFullScreen title={m.title} />
                   </div>
                 ) : (
-                  <button className="btn btn-sm" onClick={() => setPreviewMaterial(m)}>{t('open')}</button>
+                  <button className="btn btn-sm" onClick={() => openMaterial(m)}>{t('open')}</button>
                 )}
               </div>
             ))}

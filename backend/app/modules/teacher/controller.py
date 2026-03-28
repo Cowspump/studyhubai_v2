@@ -247,7 +247,7 @@ async def list_materials(
                 "topic": m.topic,
                 "title": m.title,
                 "type": m.type,
-                "url": m.url,
+                "url": m.url if m.type == "video" else None,
                 "file_name": m.file_name,
                 "group_ids": m.group_ids,
                 "created_at": m.created_at.isoformat(),
@@ -295,6 +295,18 @@ async def delete_material(
 ) -> None:
     await material_repo.delete_material(session, material_id)
     await session.commit()
+
+
+@router.get("/materials/{material_id}/url")
+async def get_material_url(
+    material_id: int,
+    session: AsyncSession = Depends(get_session),
+    current: dict = Depends(teacher_dep),
+) -> dict:
+    mat = await material_repo.get_material_by_id(session, material_id)
+    if not mat:
+        raise HTTPException(status_code=404, detail="Material not found")
+    return {"url": mat.url, "file_name": mat.file_name}
 
 
 @router.post("/materials/upload")

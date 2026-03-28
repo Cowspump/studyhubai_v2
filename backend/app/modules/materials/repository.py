@@ -44,6 +44,11 @@ async def get_materials_by_group(session: AsyncSession, group_id: int, skip: int
     return list(result.scalars().all()), total
 
 
+async def get_material_by_id(session: AsyncSession, material_id: int) -> Material | None:
+    result = await session.execute(select(Material).where(Material.id == material_id))
+    return result.scalar_one_or_none()
+
+
 async def create_material(
     session: AsyncSession,
     topic: str,
