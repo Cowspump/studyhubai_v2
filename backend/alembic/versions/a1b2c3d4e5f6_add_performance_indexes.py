@@ -17,85 +17,57 @@ branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
 
+def _create_index_safe(name, table, columns, **kw):
+    """Create index only if it doesn't already exist."""
+    try:
+        op.create_index(name, table, columns, **kw)
+    except Exception:
+        pass
+
+
 def upgrade() -> None:
-    # --- Materials indexes ---
-    # Index for teacher queries
-    op.create_index("idx_materials_teacher_id", "materials", ["teacher_id"])
-    
-    # Index for group queries with GIN (for ARRAY types)
-    op.create_index(
-        "idx_materials_group_ids_gin", 
-        "materials", 
-        ["group_ids"],
-        postgresql_using="gin"
+    _create_index_safe("idx_materials_teacher_id", "materials", ["teacher_id"])
+    _create_index_safe(
+        "idx_materials_group_ids_gin", "materials", ["group_ids"],
+        postgresql_using="gin",
     )
-    
-    # Combined index for teacher + created_at (useful for ordering)
-    op.create_index(
-        "idx_materials_teacher_created", 
-        "materials", 
-        ["teacher_id", "created_at"]
-    )
+    _create_index_safe("idx_materials_teacher_created", "materials", ["teacher_id", "created_at"])
 
-    # --- Tests indexes ---
-    # Index for teacher queries
-    op.create_index("idx_tests_teacher_id", "tests", ["teacher_id"])
-    
-    # Index for group queries with GIN
-    op.create_index(
-        "idx_tests_group_ids_gin", 
-        "tests", 
-        ["group_ids"],
-        postgresql_using="gin"
+    _create_index_safe("idx_tests_teacher_id", "tests", ["teacher_id"])
+    _create_index_safe(
+        "idx_tests_group_ids_gin", "tests", ["group_ids"],
+        postgresql_using="gin",
     )
-    
-    # Combined index for teacher + created_at
-    op.create_index(
-        "idx_tests_teacher_created", 
-        "tests", 
-        ["teacher_id", "created_at"]
-    )
+    _create_index_safe("idx_tests_teacher_created", "tests", ["teacher_id", "created_at"])
 
-    # --- TestResults indexes (improve result lookups) ---
-    # Index for user queries
-    op.create_index("idx_test_results_user_id", "test_results", ["user_id"])
-    
-    # Index for test queries
-    op.create_index("idx_test_results_test_id", "test_results", ["test_id"])
-    
-    # Combined index for user + created_at (for ordering)
-    op.create_index(
-        "idx_test_results_user_created", 
-        "test_results", 
-        ["user_id", "created_at"]
-    )
-    
-    # Combined index for test + created_at
-    op.create_index(
-        "idx_test_results_test_created", 
-        "test_results", 
-        ["test_id", "created_at"]
-    )
+    _create_index_safe("idx_test_results_user_id", "test_results", ["user_id"])
+    _create_index_safe("idx_test_results_test_id", "test_results", ["test_id"])
+    _create_index_safe("idx_test_results_user_created", "test_results", ["user_id", "created_at"])
+    _create_index_safe("idx_test_results_test_created", "test_results", ["test_id", "created_at"])
 
-    # --- Users indexes ---
-    # Index for group_id lookups (to find students in a group)
-    op.create_index("idx_users_group_id", "users", ["group_id"])
-    
-    # Index for teacher lookups
-    op.create_index("idx_users_role_teacher", "users", ["role"], where="role='teacher'")
+    _create_index_safe("idx_users_group_id", "users", ["group_id"])
+    _create_index_safe(
+        "idx_users_role_teacher", "users", ["role"],
+        postgresql_where=sa.text("role = 'teacher'"),
+    )
 
 
 def downgrade() -> None:
-    op.drop_index("idx_users_role_teacher", table_name="users")
-    op.drop_index("idx_users_group_id", table_name="users")
-    op.drop_index("idx_test_results_test_created", table_name="test_results")
-    op.drop_index("idx_test_results_user_created", table_name="test_results")
-    op.drop_index("idx_test_results_test_id", table_name="test_results")
-    op.drop_index("idx_test_results_user_id", table_name="test_results")
-    op.drop_index("idx_tests_teacher_created", table_name="tests")
-    op.drop_index("idx_tests_group_ids_gin", table_name="tests")
-    op.drop_index("idx_tests_teacher_id", table_name="tests")
-    op.drop_index("idx_materials_teacher_created", table_name="materials")
-    op.drop_index("idx_materials_group_ids_gin", table_name="materials")
-    op.drop_index("idx_materials_teacher_id", table_name="materials")
-
+    for name, table in [
+        ("idx_users_role_teacher", "users"),
+        ("idx_users_group_id", "users"),
+        ("idx_test_results_test_created", "test_results"),
+        ("idx_test_results_user_created", "test_results"),
+        ("idx_test_results_test_id", "test_results"),
+        ("idx_test_results_user_id", "test_results"),
+        ("idx_tests_teacher_created", "tests"),
+        ("idx_tests_group_ids_gin", "tests"),
+        ("idx_tests_teacher_id", "tests"),
+        ("idx_materials_teacher_created", "materials"),
+        ("idx_materials_group_ids_gin", "materials"),
+        ("idx_materials_teacher_id", "materials"),
+    ]:
+        try:
+            op.drop_index(name, table_name=table)
+        except Exception:
+            pass
