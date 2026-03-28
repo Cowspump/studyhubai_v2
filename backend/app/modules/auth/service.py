@@ -2,6 +2,7 @@ import logging
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.shared.core.config import settings
 from app.shared.core.exceptions import ApiError
 from app.shared.core.mailer import send_verification_email
 from app.shared.core.security import create_jwt, generate_verification_code, hash_password, verify_password
@@ -33,6 +34,24 @@ async def register_user(
         role=role,
         group_id=group_id,
     )
+
+    if settings.is_mvp:
+        await auth_repo.mark_user_verified(session, user_id=user.id)
+        await session.commit()
+        token = create_jwt(user_id=user.id, email=user.email, role=user.role)
+        return {
+            "message": "User created.",
+            "token": token,
+            "user": {
+                "id": user.id,
+                "name": user.name,
+                "email": user.email,
+                "role": user.role,
+                "group_id": user.group_id,
+                "is_verified": True,
+            },
+        }
+
     code = generate_verification_code()
     await auth_repo.store_verification_code(session, user_id=user.id, code=code)
     await session.commit()

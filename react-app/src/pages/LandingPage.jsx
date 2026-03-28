@@ -115,6 +115,9 @@ function AuthModal({ isOpen, onClose, initialTab }) {
     const res = await register(regName, regEmail, regPass, regRole, regGroup);
     if (res?.error) {
       setRegError(mapAuthError(res.error, t('loginError')));
+    } else if (res?.user) {
+      onClose();
+      navigate(res.user.role === 'teacher' ? '/teacher' : '/student');
     } else {
       setPendingVerificationEmail(regEmail);
       setVerificationCode('');

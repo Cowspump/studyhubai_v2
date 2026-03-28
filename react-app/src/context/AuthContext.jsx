@@ -36,7 +36,12 @@ export function AuthProvider({ children }) {
 
   const register = useCallback(async (name, email, password, role, group_id) => {
     try {
-      await authApi.register({ name, email, password, role, group_id: role === 'student' ? group_id : undefined });
+      const data = await authApi.register({ name, email, password, role, group_id: role === 'student' ? group_id : undefined });
+      if (data.token) {
+        setAuthToken(data.token);
+        persistUser(data.user);
+        return { success: true, user: data.user };
+      }
       return { success: true };
     } catch (err) {
       return { error: err.message || 'Registration failed' };

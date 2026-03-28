@@ -27,6 +27,7 @@ class Settings:
     smtp_user: str
     smtp_pass: str
     smtp_from: str
+    is_mvp: bool
 
     database_url: str
 
@@ -48,6 +49,7 @@ settings = Settings(
     smtp_user=os.getenv("SMTP_USER", ""),
     smtp_pass=os.getenv("SMTP_PASS", ""),
     smtp_from=os.getenv("SMTP_FROM", "StudyHubAI <noreply@example.com>"),
+    is_mvp=os.getenv("IS_MVP", "true").lower() == "true",
     database_url=(
         f"postgresql+asyncpg://"
         f"{os.getenv('PGUSER', 'studyhubai')}:{os.getenv('PGPASSWORD', 'studyhubai_password')}"
