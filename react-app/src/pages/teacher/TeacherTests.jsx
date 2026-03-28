@@ -37,15 +37,15 @@ export default function TeacherTests() {
         teacherApi.getMaterials(),
         teacherApi.getApiKey(),
       ]);
-      setTests(testsData);
-      setGroups(groupsData);
-      setMaterials(matsData);
+      setTests(testsData.items || []);
+      setGroups(groupsData.items || []);
+      setMaterials(matsData.items || []);
       setApiKey(keyData.openai_key || '');
 
+      const items = testsData.items || [];
+      const allResults = await Promise.all(items.map(tt => teacherApi.getTestResults(tt.id)));
       const rMap = {};
-      for (const tt of testsData) {
-        rMap[tt.id] = await teacherApi.getTestResults(tt.id);
-      }
+      items.forEach((tt, i) => { rMap[tt.id] = allResults[i]; });
       setResultsMap(rMap);
     } catch { /* ignore */ } finally {
       setLoading(false);

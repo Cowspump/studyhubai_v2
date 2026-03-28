@@ -18,8 +18,8 @@ export default function StudentTests() {
           studentApi.getTests(),
           studentApi.getResults(),
         ]);
-        setTests(testsData);
-        setResults(resultsData);
+        setTests(testsData.items || []);
+        setResults(resultsData || []);
       } catch { /* ignore */ } finally {
         setLoading(false);
       }

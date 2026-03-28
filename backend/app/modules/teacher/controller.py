@@ -4,7 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.shared.core.deps import require_role
 from app.shared.core.security import hash_password
-from app.shared.core.file_handler import save_profile_photo, delete_profile_photo
+from app.shared.core.file_handler import save_profile_photo, delete_profile_photo, save_material_file
 from app.shared.db import get_session
 from app.modules.users import repository as user_repo
 from app.modules.users.models import User
@@ -234,23 +234,30 @@ async def delete_student(
 
 @router.get("/materials")
 async def list_materials(
+    skip: int = 0,
+    limit: int = 50,
     session: AsyncSession = Depends(get_session),
     current: dict = Depends(teacher_dep),
-) -> list[dict]:
-    mats = await material_repo.get_materials_by_teacher(session, current["userId"])
-    return [
-        {
-            "id": m.id,
-            "topic": m.topic,
-            "title": m.title,
-            "type": m.type,
-            "url": m.url,
-            "file_name": m.file_name,
-            "group_ids": m.group_ids,
-            "created_at": m.created_at.isoformat(),
-        }
-        for m in mats
-    ]
+) -> dict:
+    mats, total = await material_repo.get_materials_by_teacher(session, current["userId"], skip, limit)
+    return {
+        "items": [
+            {
+                "id": m.id,
+                "topic": m.topic,
+                "title": m.title,
+                "type": m.type,
+                "url": m.url,
+                "file_name": m.file_name,
+                "group_ids": m.group_ids,
+                "created_at": m.created_at.isoformat(),
+            }
+            for m in mats
+        ],
+        "total": total,
+        "skip": skip,
+        "limit": limit,
+    }
 
 
 @router.post("/materials", status_code=201)
@@ -290,24 +297,40 @@ async def delete_material(
     await session.commit()
 
 
+@router.post("/materials/upload")
+async def upload_material_file(
+    file: UploadFile = File(...),
+    current: dict = Depends(teacher_dep),
+) -> dict:
+    url = await save_material_file(file)
+    return {"url": url}
+
+
 # ── Tests ────────────────────────────────────────────────
 
 @router.get("/tests")
 async def list_tests(
+    skip: int = 0,
+    limit: int = 50,
     session: AsyncSession = Depends(get_session),
     current: dict = Depends(teacher_dep),
-) -> list[dict]:
-    tests = await test_repo.get_tests_by_teacher(session, current["userId"])
-    return [
-        {
-            "id": t.id,
-            "title": t.title,
-            "group_ids": t.group_ids,
-            "questions": t.questions,
-            "created_at": t.created_at.isoformat(),
-        }
-        for t in tests
-    ]
+) -> dict:
+    tests, total = await test_repo.get_tests_by_teacher(session, current["userId"], skip, limit)
+    return {
+        "items": [
+            {
+                "id": t.id,
+                "title": t.title,
+                "group_ids": t.group_ids,
+                "questions": t.questions,
+                "created_at": t.created_at.isoformat(),
+            }
+            for t in tests
+        ],
+        "total": total,
+        "skip": skip,
+        "limit": limit,
+    }
 
 
 @router.post("/tests", status_code=201)
@@ -368,19 +391,18 @@ async def test_results(
     session: AsyncSession = Depends(get_session),
     current: dict = Depends(teacher_dep),
 ) -> list[dict]:
-    results = await test_repo.get_results_by_test(session, test_id)
-    out = []
-    for r in results:
-        user = await user_repo.get_user_by_id(session, r.user_id)
-        out.append({
+    rows = await test_repo.get_results_with_users(session, test_id)
+    return [
+        {
             "id": r.id,
             "user_id": r.user_id,
-            "user_name": user.name if user else "N/A",
+            "user_name": user_name or "N/A",
             "score": r.score,
             "total": r.total,
             "created_at": r.created_at.isoformat(),
-        })
-    return out
+        }
+        for r, user_name in rows
+    ]
 
 
 # ── Stats ────────────────────────────────────────────────
@@ -391,22 +413,16 @@ async def teacher_stats(
     current: dict = Depends(teacher_dep),
 ) -> dict:
     groups = await group_repo.get_groups_by_teacher(session, current["userId"])
-    group_ids = [g.id for g in groups]
-
-    students = []
-    for gid in group_ids:
-        students.extend(await user_repo.get_students_by_group(session, gid))
-
+    students_with_groups = await user_repo.get_students_by_teacher(session, current["userId"])
+    student_ids = {s.id for s, _ in students_with_groups}
     tests = await test_repo.get_tests_by_teacher(session, current["userId"])
-    all_results = await test_repo.get_all_results(session)
-    student_ids = {s.id for s in students}
-    my_results = [r for r in all_results if r.user_id in student_ids]
+    results_count = await test_repo.count_results_by_student_ids(session, student_ids)
 
     return {
         "groups": len(groups),
-        "students": len(students),
+        "students": len(students_with_groups),
         "tests": len(tests),
-        "results": len(my_results),
+        "results": results_count,
     }
 
 
@@ -417,26 +433,19 @@ async def student_rating(
     session: AsyncSession = Depends(get_session),
     current: dict = Depends(teacher_dep),
 ) -> list[dict]:
-    groups = await group_repo.get_groups_by_teacher(session, current["userId"])
-    group_map = {g.id: g.name for g in groups}
-    group_ids = [g.id for g in groups]
+    students_with_groups = await user_repo.get_students_by_teacher(session, current["userId"])
+    student_ids = {s.id for s, _ in students_with_groups}
+    stats = await test_repo.get_results_stats_by_students(session, student_ids)
 
-    students = []
-    for gid in group_ids:
-        students.extend(await user_repo.get_students_by_group(session, gid))
-
-    all_results = await test_repo.get_all_results(session)
     rating = []
-    for s in students:
-        sr = [r for r in all_results if r.user_id == s.id]
-        total = len(sr)
-        avg = round(sum((r.score / r.total) * 100 for r in sr) / total) if total > 0 else 0
+    for s, group_name in students_with_groups:
+        st = stats.get(s.id, {"count": 0, "avg": 0})
         rating.append({
             "id": s.id,
             "name": s.name,
-            "group_name": group_map.get(s.group_id, ""),
-            "test_count": total,
-            "avg": avg,
+            "group_name": group_name,
+            "test_count": st["count"],
+            "avg": st["avg"],
         })
     rating.sort(key=lambda x: (-x["avg"], -x["test_count"]))
     return rating
@@ -450,8 +459,10 @@ async def get_conversations(
     current: dict = Depends(teacher_dep),
 ) -> list[dict]:
     convos = await message_repo.get_conversations_for_user(session, current["userId"])
+    partner_ids = [c["partner_id"] for c in convos]
+    users_map = await user_repo.get_users_by_ids(session, partner_ids)
     for c in convos:
-        user = await user_repo.get_user_by_id(session, c["partner_id"])
+        user = users_map.get(c["partner_id"])
         c["partner_name"] = user.name if user else "Unknown"
         c["partner_group_id"] = user.group_id if user else None
     return convos
@@ -506,16 +517,14 @@ async def get_all_students(
     session: AsyncSession = Depends(get_session),
     current: dict = Depends(teacher_dep),
 ) -> list[dict]:
-    groups = await group_repo.get_groups_by_teacher(session, current["userId"])
-    students = []
-    for g in groups:
-        sts = await user_repo.get_students_by_group(session, g.id)
-        for s in sts:
-            students.append({
-                "id": s.id,
-                "name": s.name,
-                "email": s.email,
-                "group_id": s.group_id,
-                "group_name": g.name,
-            })
-    return students
+    students_with_groups = await user_repo.get_students_by_teacher(session, current["userId"])
+    return [
+        {
+            "id": s.id,
+            "name": s.name,
+            "email": s.email,
+            "group_id": s.group_id,
+            "group_name": group_name,
+        }
+        for s, group_name in students_with_groups
+    ]

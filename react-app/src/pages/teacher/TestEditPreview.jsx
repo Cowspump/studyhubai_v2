@@ -15,7 +15,8 @@ export default function TestEditPreview() {
   useEffect(() => {
     if (testId) {
       // Editing existing test — load from API
-      teacherApi.getTests().then((tests) => {
+      teacherApi.getTests().then((data) => {
+        const tests = data.items || [];
         const test = tests.find((t) => t.id === parseInt(testId));
         if (test) {
           setTitle(test.title);

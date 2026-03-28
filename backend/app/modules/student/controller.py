@@ -75,57 +75,75 @@ async def get_teacher_info(
 
 @router.get("/materials")
 async def list_materials(
+    skip: int = 0,
+    limit: int = 50,
     session: AsyncSession = Depends(get_session),
     current: dict = Depends(student_dep),
-) -> list[dict]:
+) -> dict:
     user = await user_repo.get_user_by_id(session, current["userId"])
     if not user or not user.group_id:
-        return []
-    mats = await material_repo.get_materials_by_group(session, user.group_id)
-    return [
-        {
-            "id": m.id,
-            "topic": m.topic,
-            "title": m.title,
-            "type": m.type,
-            "url": m.url,
-            "file_name": m.file_name,
-            "group_ids": m.group_ids,
-        }
-        for m in mats
-    ]
+        return {"items": [], "total": 0, "skip": skip, "limit": limit}
+    mats, total = await material_repo.get_materials_by_group(session, user.group_id, skip, limit)
+    return {
+        "items": [
+            {
+                "id": m.id,
+                "topic": m.topic,
+                "title": m.title,
+                "type": m.type,
+                "url": m.url,
+                "file_name": m.file_name,
+                "group_ids": m.group_ids,
+            }
+            for m in mats
+        ],
+        "total": total,
+        "skip": skip,
+        "limit": limit,
+    }
 
 
 # ── Tests ────────────────────────────────────────────────
 
 @router.get("/tests")
 async def list_tests(
+    skip: int = 0,
+    limit: int = 50,
     session: AsyncSession = Depends(get_session),
     current: dict = Depends(student_dep),
-) -> list[dict]:
+) -> dict:
     user = await user_repo.get_user_by_id(session, current["userId"])
     if not user or not user.group_id:
-        return []
-    tests = await test_repo.get_tests_by_group(session, user.group_id)
-    results = await test_repo.get_results_by_user(session, user.id)
-    result_map = {}
-    for r in results:
-        result_map[r.test_id] = {
-            "score": r.score,
-            "total": r.total,
-            "answers": r.answers,
-            "created_at": r.created_at.isoformat(),
-        }
+        return {"items": [], "total": 0, "skip": skip, "limit": limit}
+    tests, total = await test_repo.get_tests_by_group(session, user.group_id, skip, limit)
+    
+    # Efficiently load results for all tests at once
+    test_ids = [t.id for t in tests]
+    result_map = await test_repo.get_results_by_test_ids(session, user.id, test_ids)
 
-    return [
-        {
-            "id": t.id,
-            "title": t.title,
-            "question_count": len(t.questions),
-            "result": result_map.get(t.id),
-        }
-        for t in tests
-    ]
+    return {
+        "items": [
+            {
+                "id": t.id,
+                "title": t.title,
+                "question_count": len(t.questions),
+                "result": (
+                    {
+                        "score": result_map[t.id].score,
+                        "total": result_map[t.id].total,
+                        "answers": result_map[t.id].answers,
+                        "created_at": result_map[t.id].created_at.isoformat(),
+                    }
+                    if t.id in result_map
+                    else None
+                ),
+            }
+            for t in tests
+        ],
+        "total": total,
+        "skip": skip,
+        "limit": limit,
+    }
 
 
 @router.get("/tests/{test_id}")
@@ -205,19 +223,18 @@ async def list_results(
     session: AsyncSession = Depends(get_session),
     current: dict = Depends(student_dep),
 ) -> list[dict]:
-    results = await test_repo.get_results_by_user(session, current["userId"])
-    out = []
-    for r in results:
-        test = await test_repo.get_test_by_id(session, r.test_id)
-        out.append({
+    rows = await test_repo.get_results_with_tests(session, current["userId"])
+    return [
+        {
             "id": r.id,
             "test_id": r.test_id,
-            "test_title": test.title if test else "Deleted",
+            "test_title": test_title or "Deleted",
             "score": r.score,
             "total": r.total,
             "created_at": r.created_at.isoformat(),
-        })
-    return out
+        }
+        for r, test_title in rows
+    ]
 
 
 # ── Messages ─────────────────────────────────────────────

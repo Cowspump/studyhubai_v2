@@ -25,8 +25,8 @@ export default function TeacherMaterials() {
         teacherApi.getMaterials(),
         teacherApi.getGroups(),
       ]);
-      setMaterials(mats);
-      setGroups(grps);
+      setMaterials(mats.items || []);
+      setGroups(grps.items || []);
     } catch { /* ignore */ } finally {
       setLoading(false);
     }
@@ -61,13 +61,14 @@ export default function TeacherMaterials() {
     } catch { /* ignore */ }
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (type === 'file') {
       if (!file) return alert(t('selectFile'));
-      const reader = new FileReader();
-      reader.onload = () => saveMaterial(file.name.split('.').pop().toLowerCase(), reader.result, file.name);
-      reader.readAsDataURL(file);
+      try {
+        const { url: uploadedUrl } = await teacherApi.uploadMaterialFile(file);
+        await saveMaterial(file.name.split('.').pop().toLowerCase(), uploadedUrl, file.name);
+      } catch { /* ignore */ }
     } else {
       saveMaterial(type, url);
     }

@@ -1,23 +1,47 @@
 from __future__ import annotations
 
-from sqlalchemy import delete, select
+from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.modules.materials.models import Material
 
 
-async def get_materials_by_teacher(session: AsyncSession, teacher_id: int) -> list[Material]:
-    result = await session.execute(
-        select(Material).where(Material.teacher_id == teacher_id).order_by(Material.created_at)
+async def get_materials_by_teacher(session: AsyncSession, teacher_id: int, skip: int = 0, limit: int = 100) -> tuple[list[Material], int]:
+    """Get materials with pagination and return total count"""
+    # Get total count efficiently
+    count_result = await session.execute(
+        select(func.count(Material.id)).where(Material.teacher_id == teacher_id)
     )
-    return list(result.scalars().all())
+    total = count_result.scalar() or 0
+    
+    # Get paginated results
+    result = await session.execute(
+        select(Material)
+        .where(Material.teacher_id == teacher_id)
+        .order_by(Material.created_at.desc())
+        .offset(skip)
+        .limit(limit)
+    )
+    return list(result.scalars().all()), total
 
 
-async def get_materials_by_group(session: AsyncSession, group_id: int) -> list[Material]:
-    result = await session.execute(
-        select(Material).where(Material.group_ids.any(group_id)).order_by(Material.created_at)
+async def get_materials_by_group(session: AsyncSession, group_id: int, skip: int = 0, limit: int = 100) -> tuple[list[Material], int]:
+    """Get materials by group with pagination"""
+    # Get total count efficiently
+    count_result = await session.execute(
+        select(func.count(Material.id)).where(Material.group_ids.any(group_id))
     )
-    return list(result.scalars().all())
+    total = count_result.scalar() or 0
+    
+    # Get paginated results
+    result = await session.execute(
+        select(Material)
+        .where(Material.group_ids.any(group_id))
+        .order_by(Material.created_at.desc())
+        .offset(skip)
+        .limit(limit)
+    )
+    return list(result.scalars().all()), total
 
 
 async def create_material(

@@ -1,33 +1,14 @@
-import { useEffect, useState } from 'react';
 import { useLang } from '../context/LanguageContext';
 
 export default function MaterialModal({ material, onClose }) {
   const { t } = useLang();
-  const [blobUrl, setBlobUrl] = useState(null);
 
   const { url, title, type } = material;
-  const isDataUrl = url?.startsWith('data:');
-  const ext = isDataUrl
-    ? (url.match(/data:[^/]+\/([^;,]+)/) || [])[1] || ''
-    : url?.split('.').pop().toLowerCase() || '';
-  const isPdf = ext === 'pdf' || (isDataUrl && url.startsWith('data:application/pdf'));
+  const fileName = material.file_name || title;
+  const ext = fileName?.split('.').pop().toLowerCase() || url?.split('.').pop().toLowerCase() || '';
+  const isPdf = ext === 'pdf';
   const isImage = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'bmp'].includes(ext);
   const canPreview = isPdf || isImage;
-
-  useEffect(() => {
-    if (isDataUrl) {
-      const [header, b64] = url.split(',');
-      const mime = header.match(/:(.*?);/)[1];
-      const bin = atob(b64);
-      const arr = new Uint8Array(bin.length);
-      for (let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
-      const blob = URL.createObjectURL(new Blob([arr], { type: mime }));
-      setBlobUrl(blob);
-      return () => URL.revokeObjectURL(blob);
-    }
-  }, [url, isDataUrl]);
-
-  const viewUrl = blobUrl || url;
 
   const extInfo = {
     ppt: { icon: '📊', label: t('pptPresentation') },
@@ -58,7 +39,7 @@ export default function MaterialModal({ material, onClose }) {
           }}>
             <strong style={{ fontSize: '1.1rem' }}>{title}</strong>
             <div>
-              <a href={viewUrl} download={`${title}.${ext}`} className="btn btn-sm" style={{ marginRight: 8 }}>
+              <a href={url} download={fileName} className="btn btn-sm" style={{ marginRight: 8 }}>
                 {t('download')}
               </a>
               <button className="btn btn-sm" onClick={onClose} style={{ background: '#e74c3c', color: '#fff' }}>
@@ -68,10 +49,10 @@ export default function MaterialModal({ material, onClose }) {
           </div>
           {isImage ? (
             <div style={{ flex: 1, overflow: 'auto', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16, background: '#f5f5f5' }}>
-              <img src={viewUrl} alt={title} style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain', borderRadius: 8 }} />
+              <img src={url} alt={title} style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain', borderRadius: 8 }} />
             </div>
           ) : (
-            <iframe src={viewUrl} style={{ flex: 1, border: 'none', width: '100%' }} title={title} />
+            <iframe src={url} style={{ flex: 1, border: 'none', width: '100%' }} title={title} />
           )}
         </div>
       ) : (
@@ -80,7 +61,7 @@ export default function MaterialModal({ material, onClose }) {
           <h3 style={{ margin: '0 0 8px' }}>{title}</h3>
           <p style={{ color: '#666', margin: '0 0 4px' }}>{info.label}</p>
           <div style={{ display: 'flex', gap: 12, justifyContent: 'center', marginTop: 24 }}>
-            <a href={viewUrl} download={title} className="btn btn-primary" style={{ padding: '10px 24px', textDecoration: 'none' }}>
+            <a href={url} download={fileName} className="btn btn-primary" style={{ padding: '10px 24px', textDecoration: 'none' }}>
               {t('downloadFile')}
             </a>
             <button onClick={onClose} className="btn" style={{ padding: '10px 24px', background: '#e74c3c', color: '#fff', border: 'none', borderRadius: 8, cursor: 'pointer' }}>

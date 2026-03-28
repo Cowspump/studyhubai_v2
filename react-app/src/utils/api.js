@@ -216,6 +216,22 @@ export const teacherApi = {
   getMaterials() {
     return apiRequest('/api/teacher/materials', { headers: authHeaders() });
   },
+  uploadMaterialFile(file) {
+    const formData = new FormData();
+    formData.append('file', file);
+    return fetch(`${API_BASE_URL}/api/teacher/materials/upload`, {
+      method: 'POST',
+      headers: authHeaders(),
+      body: formData,
+    }).then(async res => {
+      const data = await parseResponse(res);
+      if (!res.ok) {
+        const message = data?.detail || data?.error || `Upload failed: ${res.status}`;
+        throw new Error(message);
+      }
+      return data;
+    });
+  },
   createMaterial(payload) {
     return apiRequest('/api/teacher/materials', {
       method: 'POST',

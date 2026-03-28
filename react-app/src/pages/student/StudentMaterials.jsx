@@ -12,7 +12,7 @@ export default function StudentMaterials() {
 
   useEffect(() => {
     studentApi.getMaterials()
-      .then(setMaterials)
+      .then((data) => setMaterials(data.items || []))
       .catch(() => setMaterials([]))
       .finally(() => setLoading(false));
   }, []);
@@ -20,7 +20,7 @@ export default function StudentMaterials() {
   const typeIcon = { pdf: '📄', video: '🎬', link: '🔗', file: '📁' };
 
   const byTopic = {};
-  materials.forEach((m) => {
+  (materials || []).forEach((m) => {
     if (!byTopic[m.topic]) byTopic[m.topic] = [];
     byTopic[m.topic].push(m);
   });

@@ -74,6 +74,38 @@ async def save_profile_photo(file: UploadFile) -> str:
     return f"/uploads/{unique_name}"
 
 
+ALLOWED_MATERIAL_EXTENSIONS = {
+    '.pdf', '.doc', '.docx', '.ppt', '.pptx', '.xls', '.xlsx',
+    '.txt', '.zip', '.rar', '.jpg', '.jpeg', '.png', '.gif', '.webp', '.svg', '.bmp',
+}
+MAX_MATERIAL_SIZE = 15 * 1024 * 1024  # 15MB
+MATERIALS_DIR = UPLOAD_DIR / "materials"
+MATERIALS_DIR.mkdir(exist_ok=True)
+
+
+async def save_material_file(file: UploadFile) -> str:
+    content = await file.read()
+
+    if len(content) > MAX_MATERIAL_SIZE:
+        raise HTTPException(
+            status_code=400,
+            detail=f"File size exceeds maximum of {MAX_MATERIAL_SIZE / 1024 / 1024:.0f}MB"
+        )
+
+    file_ext = Path(file.filename).suffix.lower() if file.filename else ""
+    if file_ext not in ALLOWED_MATERIAL_EXTENSIONS:
+        raise HTTPException(
+            status_code=400,
+            detail=f"File type '{file_ext}' not allowed"
+        )
+
+    unique_name = f"{uuid.uuid4()}{file_ext}"
+    file_path = MATERIALS_DIR / unique_name
+    file_path.write_bytes(content)
+
+    return f"/uploads/materials/{unique_name}"
+
+
 async def delete_profile_photo(photo_path: str) -> None:
     """
     Deletes a profile photo if it exists.
