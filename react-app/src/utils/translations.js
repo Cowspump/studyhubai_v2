@@ -48,6 +48,8 @@ export const translations = {
     authServerUnavailable: 'Серверге қосылу мүмкін болмады. Кейінірек қайталап көріңіз.',
     selectGroup: 'Топты таңдаңыз',
     photoUrl: 'Фото URL',
+    selectPhoto: 'Фотосуретті таңдау',
+    uploading: 'Жүктелуде...',
 
     // Landing
     badgeText: 'ИИ негізіндегі білім беру платформасы',
@@ -749,6 +751,8 @@ export const translations = {
     authServerUnavailable: 'Could not connect to the server. Please try again later.',
     selectGroup: 'Select a group',
     photoUrl: 'Photo URL',
+    selectPhoto: 'Select Photo',
+    uploading: 'Uploading...',
 
     // Landing
     badgeText: 'AI-Powered Education Platform',

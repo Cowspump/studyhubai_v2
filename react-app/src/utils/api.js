@@ -157,6 +157,26 @@ export const teacherApi = {
       body: JSON.stringify({ openai_key }),
     });
   },
+  uploadPhoto(file) {
+    const formData = new FormData();
+    formData.append('file', file);
+    return fetch(`${API_BASE_URL}/api/teacher/me/photo`, {
+      method: 'POST',
+      headers: authHeaders(),
+      body: formData,
+    }).then(async res => {
+      const data = await parseResponse(res);
+      if (!res.ok) {
+        const message = data?.detail || data?.error || data?.message || `Request failed: ${res.status}`;
+        const err = new Error(message);
+        err.status = res.status;
+        err.data = data;
+        throw err;
+      }
+      return data;
+    });
+  },
+
 
   // Groups
   getGroups() {

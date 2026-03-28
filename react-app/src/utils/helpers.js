@@ -39,9 +39,24 @@ export function transliterate(str) {
     .join('');
 }
 
+// ...existing code...
+
 export function generatePassword() {
   const chars = 'abcdefghjkmnpqrstuvwxyz23456789';
   let pass = '';
   for (let i = 0; i < 8; i++) pass += chars[Math.floor(Math.random() * chars.length)];
   return pass;
 }
+
+export function resolveMediaUrl(photoPath) {
+  if (!photoPath) return '/src/assets/placeholder.svg';
+  if (photoPath.startsWith('http://') || photoPath.startsWith('https://')) {
+    return photoPath;
+  }
+  const apiBase = import.meta.env.VITE_API_URL || 'http://localhost:4000';
+  if (photoPath.startsWith('/')) {
+    return `${apiBase}${photoPath}`;
+  }
+  return `/src/assets/placeholder.svg`;
+}
+

@@ -1,7 +1,7 @@
 import { NavLink } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useLang } from '../context/LanguageContext';
-import { getInitials } from '../utils/helpers';
+import { getInitials, resolveMediaUrl } from '../utils/helpers';
 import LanguageSwitcher from './LanguageSwitcher';
 
 export default function Sidebar({ links, adminUser, onAdminLogout, unreadCount = 0 }) {
@@ -15,16 +15,16 @@ export default function Sidebar({ links, adminUser, onAdminLogout, unreadCount =
   return (
     <aside className="sidebar">
       <div className="sidebar-header">
-        {user.photo ? (
-          <img
-            src={user.photo}
-            className="avatar"
-            alt={t('photo')}
-            style={{ width: 60, height: 60, objectFit: 'cover', borderRadius: '50%' }}
-          />
-        ) : (
-          <div className="avatar-initials">{getInitials(user.name)}</div>
-        )}
+         {user.photo ? (
+           <img
+             src={resolveMediaUrl(user.photo)}
+             className="avatar"
+             alt={t('photo')}
+             style={{ width: 60, height: 60, objectFit: 'cover', borderRadius: '50%' }}
+           />
+         ) : (
+           <div className="avatar-initials">{getInitials(user.name)}</div>
+         )}
         <h3>{user.name}</h3>
         <p className={`role-badge ${user.role === 'student' ? 'student-badge' : ''} ${user.role === 'superadmin' ? 'admin-badge' : ''}`}>
           {user.role === 'superadmin' ? t('superadmin') : user.role === 'teacher' ? t('teacher') : user.group_name || t('student')}

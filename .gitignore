@@ -29,6 +29,9 @@ env/
 node_modules/
 react-app/dist/
 
+# Uploads
+backend/uploads/
+
 # OS
 .DS_Store
 Thumbs.db

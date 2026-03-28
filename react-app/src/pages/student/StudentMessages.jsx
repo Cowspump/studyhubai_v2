@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useLang } from '../../context/LanguageContext';
 import { studentApi } from '../../utils/api';
-import { formatTime } from '../../utils/helpers';
+import { resolveMediaUrl, formatTime } from '../../utils/helpers';
 
 export default function StudentMessages() {
   const { user } = useAuth();
@@ -44,13 +44,13 @@ export default function StudentMessages() {
   return (
     <div className="messages-section">
       <h2>{t('messages')}</h2>
-      <div className="msg-chat-box" style={{ border: '1px solid var(--border)', borderRadius: 'var(--radius)', height: 520, boxShadow: 'var(--shadow)', background: 'var(--surface)' }}>
-        <div className="msg-chat-header">
-          <img
-            src={teacher.photo || '/src/assets/placeholder.svg'}
-            style={{ width: 36, height: 36, borderRadius: '50%', objectFit: 'cover' }}
-            alt=""
-          />
+       <div className="msg-chat-box" style={{ border: '1px solid var(--border)', borderRadius: 'var(--radius)', height: 520, boxShadow: 'var(--shadow)', background: 'var(--surface)' }}>
+         <div className="msg-chat-header">
+           <img
+             src={resolveMediaUrl(teacher.photo)}
+             style={{ width: 36, height: 36, borderRadius: '50%', objectFit: 'cover' }}
+             alt=""
+           />
           <div>
             <strong>{teacher.name}</strong>
             <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', margin: 0 }}>{t('teacherLabel')}</p>

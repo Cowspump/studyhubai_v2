@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useLang } from '../../context/LanguageContext';
 import { studentApi } from '../../utils/api';
+import { resolveMediaUrl } from '../../utils/helpers';
 import Spinner from '../../components/Spinner';
 
 export default function StudentHome() {
@@ -71,16 +72,16 @@ export default function StudentHome() {
         </div>
       </div>
 
-      <div className="card">
-        <h3>{t('teacherInfo')}</h3>
-        {teacher ? (
-          <div className="profile-info">
-            <img
-              src={teacher.photo || '/src/assets/placeholder.svg'}
-              className="avatar-lg"
-              alt={t('photo')}
-              style={{ width: 120, height: 150, objectFit: 'cover', borderRadius: 12 }}
-            />
+       <div className="card">
+         <h3>{t('teacherInfo')}</h3>
+         {teacher ? (
+           <div className="profile-info">
+             <img
+               src={resolveMediaUrl(teacher.photo)}
+               className="avatar-lg"
+               alt={t('photo')}
+               style={{ width: 120, height: 150, objectFit: 'cover', borderRadius: 12 }}
+             />
             <div>
               <p><strong>{teacher.name}</strong></p>
               <p>{teacher.position || ''}</p>

@@ -1,9 +1,10 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
 from sqlalchemy import delete as sa_delete
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.shared.core.deps import require_role
 from app.shared.core.security import hash_password
+from app.shared.core.file_handler import save_profile_photo, delete_profile_photo
 from app.shared.db import get_session
 from app.modules.users import repository as user_repo
 from app.modules.users.models import User
@@ -112,6 +113,29 @@ async def get_api_key(
 ) -> dict:
     user = await user_repo.get_user_by_id(session, current["userId"])
     return {"openai_key": user.openai_key or ""}
+
+
+@router.post("/me/photo", status_code=200)
+async def upload_profile_photo(
+    file: UploadFile = File(...),
+    session: AsyncSession = Depends(get_session),
+    current: dict = Depends(teacher_dep),
+) -> dict:
+    # Save the uploaded file
+    photo_path = await save_profile_photo(file)
+    
+    # Get current user and delete old photo if exists
+    user = await user_repo.get_user_by_id(session, current["userId"])
+    if user and user.photo:
+        await delete_profile_photo(user.photo)
+    
+    # Update user profile with new photo path
+    await user_repo.update_user_profile(
+        session, current["userId"], photo=photo_path
+    )
+    await session.commit()
+    
+    return {"photo": photo_path}
 
 
 # ── Groups ───────────────────────────────────────────────

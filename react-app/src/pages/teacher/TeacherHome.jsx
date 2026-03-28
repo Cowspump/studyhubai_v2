@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useLang } from '../../context/LanguageContext';
 import { teacherApi } from '../../utils/api';
+import { resolveMediaUrl } from '../../utils/helpers';
 import Spinner from '../../components/Spinner';
 
 export default function TeacherHome() {
@@ -15,6 +16,8 @@ export default function TeacherHome() {
   const [stats, setStats] = useState({ groups: 0, students: 0, tests: 0, results: 0 });
   const [rating, setRating] = useState([]);
   const [loadError, setLoadError] = useState('');
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState('');
 
   useEffect(() => {
     async function load() {
@@ -80,6 +83,22 @@ export default function TeacherHome() {
     } catch { /* ignore */ }
   };
 
+  const handlePhotoUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploading(true);
+    setUploadError('');
+    try {
+      const result = await teacherApi.uploadPhoto(file);
+      setForm({ ...form, photo: result.photo });
+    } catch (error) {
+      setUploadError(error.message || 'Failed to upload photo');
+    } finally {
+      setUploading(false);
+    }
+  };
+
   const handleSaveApiKey = async (e) => {
     e.preventDefault();
     try {
@@ -135,7 +154,7 @@ export default function TeacherHome() {
         {!editing ? (
           <div className="profile-info">
             <img
-              src={profile.photo || '/src/assets/placeholder.svg'}
+              src={resolveMediaUrl(profile.photo)}
               className="avatar-lg"
               alt={t('photo')}
               style={{ width: 120, height: 150, objectFit: 'cover', borderRadius: 12 }}
@@ -155,18 +174,61 @@ export default function TeacherHome() {
               <div className="profile-info" style={{ alignItems: 'flex-start' }}>
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem' }}>
                   <img
-                    src={form.photo || '/src/assets/placeholder.svg'}
+                    src={resolveMediaUrl(form.photo)}
                     className="avatar-lg"
                     alt={t('photo')}
                     style={{ width: 120, height: 150, objectFit: 'cover', borderRadius: 12 }}
                   />
                   <input
-                    type="text"
-                    placeholder={t('photoUrl')}
-                    value={form.photo || ''}
-                    onChange={(e) => setForm({ ...form, photo: e.target.value })}
-                    style={{ width: 120, fontSize: '0.75rem' }}
+                    ref={(ref) => window.photoInput = ref}
+                    type="file"
+                    accept="image/*"
+                    onChange={handlePhotoUpload}
+                    disabled={uploading}
+                    style={{ display: 'none' }}
                   />
+                  <button
+                    type="button"
+                    onClick={() => window.photoInput?.click()}
+                    disabled={uploading}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '0.5rem',
+                      padding: '0.5rem 1rem',
+                      background: uploading ? '#cbd5e1' : '#8b5cf6',
+                      color: '#fff',
+                      border: 'none',
+                      borderRadius: 6,
+                      fontWeight: 600,
+                      fontSize: '0.9rem',
+                      cursor: uploading ? 'not-allowed' : 'pointer',
+                      transition: 'all 0.2s',
+                    }}
+                    onMouseEnter={(e) => {
+                      if (!uploading) e.target.style.background = '#7c3aed';
+                    }}
+                    onMouseLeave={(e) => {
+                      if (!uploading) e.target.style.background = '#8b5cf6';
+                    }}
+                  >
+                    {uploading ? (
+                      <>
+                        <span style={{ display: 'inline-block', animation: 'spin 1s linear infinite' }}>⏳</span>
+                        {t('uploading') || 'Uploading...'}
+                      </>
+                    ) : (
+                      <>
+                        <span>📷</span>
+                        {t('selectPhoto') || 'Select Photo'}
+                      </>
+                    )}
+                  </button>
+                  {uploadError && (
+                    <span style={{ fontSize: '0.75rem', color: '#ef4444', textAlign: 'center' }}>
+                      ❌ {uploadError}
+                    </span>
+                  )}
                 </div>
                 <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                   <label style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>{t('name')}</label>

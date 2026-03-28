@@ -364,6 +364,108 @@ async def _run_all_endpoints_smoke(subset: str | None = None) -> None:
             assert resp.status_code == 200
             assert resp.json()["openai_key"] == new_openai_key
 
+            # Photo upload tests.
+            from io import BytesIO
+            from PIL import Image
+
+            # Test successful photo upload with PNG
+            img = Image.new('RGB', (100, 100), color='red')
+            img_io = BytesIO()
+            img.save(img_io, format='PNG')
+            img_io.seek(0)
+            
+            resp = await client.post(
+                "/api/teacher/me/photo",
+                headers=teacher_headers,
+                files={"file": ("test_photo.png", img_io, "image/png")}
+            )
+            assert resp.status_code == 200
+            photo_result = resp.json()
+            assert "photo" in photo_result
+            assert photo_result["photo"].startswith("/uploads/")
+            assert photo_result["photo"].endswith(".jpg")
+            stored_photo = photo_result["photo"]
+
+            # Verify photo was stored in profile
+            resp = await client.get("/api/teacher/me", headers=teacher_headers)
+            assert resp.status_code == 200
+            profile = resp.json()
+            assert profile["photo"] == stored_photo
+
+            # Test upload with JPEG
+            img_jpeg = Image.new('RGB', (80, 80), color='blue')
+            img_jpeg_io = BytesIO()
+            img_jpeg.save(img_jpeg_io, format='JPEG')
+            img_jpeg_io.seek(0)
+            
+            resp = await client.post(
+                "/api/teacher/me/photo",
+                headers=teacher_headers,
+                files={"file": ("test_photo.jpg", img_jpeg_io, "image/jpeg")}
+            )
+            assert resp.status_code == 200
+            new_photo = resp.json()["photo"]
+            assert new_photo != stored_photo
+
+            # Verify new photo replaced old one in profile
+            resp = await client.get("/api/teacher/me", headers=teacher_headers)
+            assert resp.status_code == 200
+            profile = resp.json()
+            assert profile["photo"] == new_photo
+
+            # Test upload with GIF
+            from PIL import ImageSequence
+            img_gif = Image.new('RGB', (50, 50), color='green')
+            img_gif_io = BytesIO()
+            img_gif.save(img_gif_io, format='GIF')
+            img_gif_io.seek(0)
+            
+            resp = await client.post(
+                "/api/teacher/me/photo",
+                headers=teacher_headers,
+                files={"file": ("test_photo.gif", img_gif_io, "image/gif")}
+            )
+            assert resp.status_code == 200
+            assert resp.json()["photo"].endswith(".jpg")
+
+            # Test upload with WebP
+            img_webp = Image.new('RGB', (60, 60), color='yellow')
+            img_webp_io = BytesIO()
+            img_webp.save(img_webp_io, format='WEBP')
+            img_webp_io.seek(0)
+            
+            resp = await client.post(
+                "/api/teacher/me/photo",
+                headers=teacher_headers,
+                files={"file": ("test_photo.webp", img_webp_io, "image/webp")}
+            )
+            assert resp.status_code == 200
+            assert resp.json()["photo"].endswith(".jpg")
+
+            # Test invalid file type
+            resp = await client.post(
+                "/api/teacher/me/photo",
+                headers=teacher_headers,
+                files={"file": ("test.txt", BytesIO(b"not an image"), "text/plain")}
+            )
+            assert resp.status_code == 400
+            assert "type not allowed" in resp.json()["detail"].lower() or "invalid" in resp.json()["detail"].lower()
+
+            # Test oversized file (mock with BytesIO)
+            large_img = Image.new('RGB', (10000, 10000), color='red')
+            large_io = BytesIO()
+            large_img.save(large_io, format='JPEG', quality=1)
+            large_io.seek(0)
+            
+            if large_io.getbuffer().nbytes > 5 * 1024 * 1024:
+                resp = await client.post(
+                    "/api/teacher/me/photo",
+                    headers=teacher_headers,
+                    files={"file": ("large.jpg", large_io, "image/jpeg")}
+                )
+                assert resp.status_code == 400
+                assert "exceeds maximum" in resp.json()["detail"].lower()
+
             resp = await client.get("/api/teacher/groups", headers=teacher_headers)
             assert resp.status_code == 200
             assert any(g["id"] == group_id for g in resp.json())

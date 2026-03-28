@@ -1,7 +1,9 @@
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 
 from app.shared.core.config import settings
 from app.shared.db import engine
@@ -37,3 +39,9 @@ app.include_router(admin_router)
 app.include_router(teacher_router)
 app.include_router(student_router)
 app.include_router(public_router)
+
+# Mount uploads directory for serving uploaded files
+uploads_path = Path(__file__).parent.parent / "uploads"
+uploads_path.mkdir(exist_ok=True)
+app.mount("/uploads", StaticFiles(directory=uploads_path), name="uploads")
+
