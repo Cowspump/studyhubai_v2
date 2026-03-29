@@ -59,23 +59,21 @@ async def delete_teacher(session: AsyncSession, teacher_id: int) -> None:
 
 
 async def get_platform_stats(session: AsyncSession) -> dict:
-    teacher_count = await session.scalar(
-        select(func.count()).select_from(User).where(User.role == "teacher")
-    )
-    student_count = await session.scalar(
-        select(func.count()).select_from(User).where(User.role == "student")
-    )
-    verified_count = await session.scalar(
-        select(func.count()).select_from(User).where(User.is_verified == True)
-    )
-    total_count = await session.scalar(
-        select(func.count()).select_from(User)
-    )
+    row = (
+        await session.execute(
+            select(
+                func.count().label("total"),
+                func.count().filter(User.role == "teacher").label("teachers"),
+                func.count().filter(User.role == "student").label("students"),
+                func.count().filter(User.is_verified.is_(True)).label("verified"),
+            ).select_from(User)
+        )
+    ).one()
     return {
-        "total_users": total_count or 0,
-        "teachers": teacher_count or 0,
-        "students": student_count or 0,
-        "verified": verified_count or 0,
+        "total_users": int(row.total or 0),
+        "teachers": int(row.teachers or 0),
+        "students": int(row.students or 0),
+        "verified": int(row.verified or 0),
     }
 
 

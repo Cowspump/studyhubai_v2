@@ -195,6 +195,7 @@ export const translations = {
     url: 'URL',
     noMaterials: 'Материалдар әлі қосылмаған',
     selectFile: 'Файлды таңдаңыз',
+    createGroupsFirst: 'Алдымен «Топтар» бөлімінде кем дегенде бір топ құрыңыз — содан кейін оны мұнда таңдай аласыз.',
 
     // Teacher Tests
     testsAndTasks: 'Тесттер мен тапсырмалар',
@@ -547,6 +548,7 @@ export const translations = {
     url: 'URL',
     noMaterials: 'Материалы ещё не добавлены',
     selectFile: 'Выберите файл',
+    createGroupsFirst: 'Сначала создайте хотя бы одну группу во вкладке «Группы», затем вы сможете выбрать её здесь.',
 
     // Teacher Tests
     testsAndTasks: 'Тесты и задания',
@@ -898,6 +900,7 @@ export const translations = {
     url: 'URL',
     noMaterials: 'No materials added yet',
     selectFile: 'Select a file',
+    createGroupsFirst: 'Create at least one group in the Groups tab first — then you can select it here.',
 
     // Teacher Tests
     testsAndTasks: 'Tests & Assignments',

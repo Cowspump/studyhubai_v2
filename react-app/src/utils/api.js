@@ -34,6 +34,14 @@ export async function apiRequest(path, options = {}) {
   return data;
 }
 
+/** API may return a JSON array or a paginated object `{ items: [...] }` */
+export function normalizeListResponse(data) {
+  if (data == null) return [];
+  if (Array.isArray(data)) return data;
+  if (Array.isArray(data.items)) return data.items;
+  return [];
+}
+
 // ── Token management (cookie-like in-memory + sessionStorage) ──
 
 let _authToken = sessionStorage.getItem('auth_token') || null;

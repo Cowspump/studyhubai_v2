@@ -14,6 +14,14 @@ async def find_user_by_email(session: AsyncSession, email: str) -> User | None:
     return result.scalar_one_or_none()
 
 
+async def get_existing_emails(session: AsyncSession, emails: list[str]) -> set[str]:
+    """Return the subset of emails that already exist (single query for bulk checks)."""
+    if not emails:
+        return set()
+    result = await session.execute(select(User.email).where(User.email.in_(emails)))
+    return set(result.scalars().all())
+
+
 async def create_user(
     session: AsyncSession,
     name: str,

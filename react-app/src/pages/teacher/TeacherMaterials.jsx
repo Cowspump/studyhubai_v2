@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useLang } from '../../context/LanguageContext';
-import { teacherApi } from '../../utils/api';
+import { teacherApi, normalizeListResponse } from '../../utils/api';
 import MaterialModal from '../../components/MaterialModal';
 import Spinner from '../../components/Spinner';
 
@@ -25,8 +25,8 @@ export default function TeacherMaterials() {
         teacherApi.getMaterials(),
         teacherApi.getGroups(),
       ]);
-      setMaterials(mats.items || []);
-      setGroups(grps.items || []);
+      setMaterials(normalizeListResponse(mats));
+      setGroups(normalizeListResponse(grps));
     } catch { /* ignore */ } finally {
       setLoading(false);
     }
@@ -117,17 +117,24 @@ export default function TeacherMaterials() {
               {file && <p style={{ margin: '0.25rem 0 0', fontSize: '0.85rem', color: '#666' }}>{file.name}</p>}
             </div>
           )}
-          <div className="checkbox-group">
-            {groups.map((g) => (
-              <label key={g.id}>
-                <input
-                  type="checkbox"
-                  checked={selectedGroups.includes(g.id)}
-                  onChange={() => toggleGroup(g.id)}
-                />
-                {g.name}
-              </label>
-            ))}
+          <div className="materials-groups-block">
+            <span className="groups-label">{t('groupsLabel')}</span>
+            {groups.length === 0 ? (
+              <p className="hint-text">{t('createGroupsFirst')}</p>
+            ) : (
+              <div className="checkbox-group">
+                {groups.map((g) => (
+                  <label key={g.id}>
+                    <input
+                      type="checkbox"
+                      checked={selectedGroups.includes(g.id)}
+                      onChange={() => toggleGroup(g.id)}
+                    />
+                    {g.name}
+                  </label>
+                ))}
+              </div>
+            )}
           </div>
           <button type="submit" className="btn btn-primary">{t('add')}</button>
         </form>

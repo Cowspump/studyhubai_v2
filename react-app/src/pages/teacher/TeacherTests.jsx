@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLang } from '../../context/LanguageContext';
-import { teacherApi } from '../../utils/api';
+import { teacherApi, normalizeListResponse } from '../../utils/api';
 import { generateTest } from '../../utils/openai';
 import Spinner from '../../components/Spinner';
 
@@ -37,12 +37,12 @@ export default function TeacherTests() {
         teacherApi.getMaterials(),
         teacherApi.getApiKey(),
       ]);
-      setTests(testsData.items || []);
-      setGroups(groupsData.items || []);
-      setMaterials(matsData.items || []);
+      setTests(normalizeListResponse(testsData));
+      setGroups(normalizeListResponse(groupsData));
+      setMaterials(normalizeListResponse(matsData));
       setApiKey(keyData.openai_key || '');
 
-      const items = testsData.items || [];
+      const items = normalizeListResponse(testsData);
       const allResults = await Promise.all(items.map(tt => teacherApi.getTestResults(tt.id)));
       const rMap = {};
       items.forEach((tt, i) => { rMap[tt.id] = allResults[i]; });
@@ -146,18 +146,24 @@ export default function TeacherTests() {
             value={aiTitle}
             onChange={(e) => setAiTitle(e.target.value)}
           />
-          <div className="checkbox-group">
-            <label><strong>{t('groupsLabel')}</strong></label>
-            {groups.map((g) => (
-              <label key={g.id}>
-                <input
-                  type="checkbox"
-                  checked={aiGroups.includes(g.id)}
-                  onChange={() => toggleGroup(g.id, setAiGroups, aiGroups)}
-                />
-                {g.name}
-              </label>
-            ))}
+          <div className="materials-groups-block">
+            <span className="groups-label"><strong>{t('groupsLabel')}</strong></span>
+            {groups.length === 0 ? (
+              <p className="hint-text">{t('createGroupsFirst')}</p>
+            ) : (
+              <div className="checkbox-group">
+                {groups.map((g) => (
+                  <label key={g.id}>
+                    <input
+                      type="checkbox"
+                      checked={aiGroups.includes(g.id)}
+                      onChange={() => toggleGroup(g.id, setAiGroups, aiGroups)}
+                    />
+                    {g.name}
+                  </label>
+                ))}
+              </div>
+            )}
           </div>
           <button
             type="submit"
@@ -182,18 +188,24 @@ export default function TeacherTests() {
             onChange={(e) => setTestTitle(e.target.value)}
             required
           />
-          <div className="checkbox-group">
-            <label><strong>{t('groupsLabel')}</strong></label>
-            {groups.map((g) => (
-              <label key={g.id}>
-                <input
-                  type="checkbox"
-                  checked={testGroups.includes(g.id)}
-                  onChange={() => toggleGroup(g.id, setTestGroups, testGroups)}
-                />
-                {g.name}
-              </label>
-            ))}
+          <div className="materials-groups-block">
+            <span className="groups-label"><strong>{t('groupsLabel')}</strong></span>
+            {groups.length === 0 ? (
+              <p className="hint-text">{t('createGroupsFirst')}</p>
+            ) : (
+              <div className="checkbox-group">
+                {groups.map((g) => (
+                  <label key={g.id}>
+                    <input
+                      type="checkbox"
+                      checked={testGroups.includes(g.id)}
+                      onChange={() => toggleGroup(g.id, setTestGroups, testGroups)}
+                    />
+                    {g.name}
+                  </label>
+                ))}
+              </div>
+            )}
           </div>
           <h4>{t('questions')}</h4>
           {questions.map((q, i) => (

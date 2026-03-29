@@ -57,9 +57,10 @@ async def get_users_by_ids(session: AsyncSession, user_ids: list[int]) -> dict[i
 
 
 async def get_teacher_for_student(session: AsyncSession, group_id: int) -> User | None:
-    result = await session.execute(select(Group).where(Group.id == group_id))
-    group = result.scalar_one_or_none()
-    if not group:
-        return None
-    result2 = await session.execute(select(User).where(User.id == group.teacher_id))
-    return result2.scalar_one_or_none()
+    result = await session.execute(
+        select(User)
+        .join(Group, Group.teacher_id == User.id)
+        .where(Group.id == group_id, User.role == "teacher")
+        .limit(1)
+    )
+    return result.scalar_one_or_none()

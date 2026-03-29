@@ -59,6 +59,20 @@ async def _require_teacher_group(session: AsyncSession, teacher_id: int, group_i
     return group
 
 
+async def _require_teacher_test(session: AsyncSession, teacher_id: int, test_id: int):
+    test = await test_repo.get_test_by_id(session, test_id)
+    if not test or test.teacher_id != teacher_id:
+        raise HTTPException(status_code=404, detail="Test not found")
+    return test
+
+
+async def _require_teacher_material(session: AsyncSession, teacher_id: int, material_id: int):
+    mat = await material_repo.get_material_by_id(session, material_id)
+    if not mat or mat.teacher_id != teacher_id:
+        raise HTTPException(status_code=404, detail="Material not found")
+    return mat
+
+
 # ── Profile ──────────────────────────────────────────────
 
 @router.get("/me")
@@ -112,6 +126,8 @@ async def get_api_key(
     current: dict = Depends(teacher_dep),
 ) -> dict:
     user = await user_repo.get_user_by_id(session, current["userId"])
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
     return {"openai_key": user.openai_key or ""}
 
 
@@ -192,10 +208,11 @@ async def bulk_create_students(
     current: dict = Depends(teacher_dep),
 ) -> list[dict]:
     await _require_teacher_group(session, current["userId"], payload.group_id)
+    emails = [s["email"] for s in payload.students]
+    taken = await auth_repo.get_existing_emails(session, emails)
     created = []
     for s in payload.students:
-        existing = await auth_repo.find_user_by_email(session, s["email"])
-        if existing:
+        if s["email"] in taken:
             continue
         user = await auth_repo.create_user(
             session,
@@ -205,6 +222,7 @@ async def bulk_create_students(
             role="student",
             group_id=payload.group_id,
         )
+        taken.add(s["email"])
         created.append({"id": user.id, "name": s["name"], "email": s["email"], "password": s["password"]})
     await session.commit()
     return created
@@ -293,6 +311,7 @@ async def delete_material(
     session: AsyncSession = Depends(get_session),
     current: dict = Depends(teacher_dep),
 ) -> None:
+    await _require_teacher_material(session, current["userId"], material_id)
     await material_repo.delete_material(session, material_id)
     await session.commit()
 
@@ -303,9 +322,7 @@ async def get_material_url(
     session: AsyncSession = Depends(get_session),
     current: dict = Depends(teacher_dep),
 ) -> dict:
-    mat = await material_repo.get_material_by_id(session, material_id)
-    if not mat:
-        raise HTTPException(status_code=404, detail="Material not found")
+    mat = await _require_teacher_material(session, current["userId"], material_id)
     return {"url": mat.url, "file_name": mat.file_name}
 
 
@@ -374,6 +391,7 @@ async def update_test(
     session: AsyncSession = Depends(get_session),
     current: dict = Depends(teacher_dep),
 ) -> dict:
+    await _require_teacher_test(session, current["userId"], test_id)
     await test_repo.update_test(
         session, test_id, payload.title, payload.group_ids, payload.questions
     )
@@ -393,6 +411,7 @@ async def delete_test(
     session: AsyncSession = Depends(get_session),
     current: dict = Depends(teacher_dep),
 ) -> None:
+    await _require_teacher_test(session, current["userId"], test_id)
     await test_repo.delete_test(session, test_id)
     await session.commit()
 
@@ -403,6 +422,7 @@ async def test_results(
     session: AsyncSession = Depends(get_session),
     current: dict = Depends(teacher_dep),
 ) -> list[dict]:
+    await _require_teacher_test(session, current["userId"], test_id)
     rows = await test_repo.get_results_with_users(session, test_id)
     return [
         {
@@ -427,13 +447,13 @@ async def teacher_stats(
     groups = await group_repo.get_groups_by_teacher(session, current["userId"])
     students_with_groups = await user_repo.get_students_by_teacher(session, current["userId"])
     student_ids = {s.id for s, _ in students_with_groups}
-    tests = await test_repo.get_tests_by_teacher(session, current["userId"])
+    tests_total = await test_repo.count_tests_by_teacher(session, current["userId"])
     results_count = await test_repo.count_results_by_student_ids(session, student_ids)
 
     return {
         "groups": len(groups),
         "students": len(students_with_groups),
-        "tests": len(tests),
+        "tests": tests_total,
         "results": results_count,
     }
 

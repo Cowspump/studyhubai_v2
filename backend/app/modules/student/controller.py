@@ -16,6 +16,12 @@ router = APIRouter(prefix="/api/student", tags=["student"])
 student_dep = require_role("student")
 
 
+def _student_in_resource_groups(group_id: int | None, resource_group_ids: list[int]) -> bool:
+    if group_id is None:
+        return False
+    return group_id in resource_group_ids
+
+
 # ── Profile / Home ───────────────────────────────────────
 
 @router.get("/me")
@@ -28,12 +34,10 @@ async def get_profile(
         raise HTTPException(status_code=404, detail="User not found")
 
     group = await group_repo.get_group_by_id(session, user.group_id) if user.group_id else None
-    results = await test_repo.get_results_by_user(session, user.id)
-    tests = await test_repo.get_tests_by_group(session, user.group_id) if user.group_id else []
-
-    avg = 0
-    if results:
-        avg = round(sum((r.score / r.total) * 100 for r in results) / len(results))
+    submitted, avg = await test_repo.get_user_results_summary(session, user.id)
+    available_tests = (
+        await test_repo.count_tests_by_group(session, user.group_id) if user.group_id else 0
+    )
 
     return {
         "id": user.id,
@@ -42,8 +46,8 @@ async def get_profile(
         "role": user.role,
         "group_id": user.group_id,
         "group_name": group.name if group else None,
-        "available_tests": len(tests),
-        "submitted": len(results),
+        "available_tests": available_tests,
+        "submitted": submitted,
         "average": avg,
     }
 
@@ -109,8 +113,11 @@ async def get_material_url(
     session: AsyncSession = Depends(get_session),
     current: dict = Depends(student_dep),
 ) -> dict:
+    user = await user_repo.get_user_by_id(session, current["userId"])
     mat = await material_repo.get_material_by_id(session, material_id)
-    if not mat:
+    if not mat or not _student_in_resource_groups(
+        user.group_id if user else None, mat.group_ids
+    ):
         raise HTTPException(status_code=404, detail="Material not found")
     return {"url": mat.url, "file_name": mat.file_name}
 
@@ -164,8 +171,11 @@ async def get_test(
     session: AsyncSession = Depends(get_session),
     current: dict = Depends(student_dep),
 ) -> dict:
+    user = await user_repo.get_user_by_id(session, current["userId"])
     test = await test_repo.get_test_by_id(session, test_id)
-    if not test:
+    if not test or not _student_in_resource_groups(
+        user.group_id if user else None, test.group_ids
+    ):
         raise HTTPException(status_code=404, detail="Test not found")
     questions = [
         {"q": q["q"], "opts": q["opts"]}
@@ -181,8 +191,11 @@ async def submit_test(
     session: AsyncSession = Depends(get_session),
     current: dict = Depends(student_dep),
 ) -> dict:
+    user = await user_repo.get_user_by_id(session, current["userId"])
     test = await test_repo.get_test_by_id(session, test_id)
-    if not test:
+    if not test or not _student_in_resource_groups(
+        user.group_id if user else None, test.group_ids
+    ):
         raise HTTPException(status_code=404, detail="Test not found")
 
     score = 0
@@ -209,8 +222,11 @@ async def get_test_result(
     session: AsyncSession = Depends(get_session),
     current: dict = Depends(student_dep),
 ) -> dict:
+    user = await user_repo.get_user_by_id(session, current["userId"])
     test = await test_repo.get_test_by_id(session, test_id)
-    if not test:
+    if not test or not _student_in_resource_groups(
+        user.group_id if user else None, test.group_ids
+    ):
         raise HTTPException(status_code=404, detail="Test not found")
     result = await test_repo.get_result_by_test_and_user(session, test_id, current["userId"])
     if not result:
