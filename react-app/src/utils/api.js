@@ -1,4 +1,4 @@
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000';
+export const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000';
 
 async function parseResponse(res) {
   const text = await res.text();
@@ -40,6 +40,14 @@ export function normalizeListResponse(data) {
   if (Array.isArray(data)) return data;
   if (Array.isArray(data.items)) return data.items;
   return [];
+}
+
+/** Resolve backend media URLs like `/uploads/...` to absolute API URL. */
+export function resolveApiUrl(maybeUrl) {
+  if (!maybeUrl) return maybeUrl;
+  if (maybeUrl.startsWith('http://') || maybeUrl.startsWith('https://')) return maybeUrl;
+  if (maybeUrl.startsWith('/')) return `${API_BASE_URL}${maybeUrl}`;
+  return maybeUrl;
 }
 
 // ── Token management (cookie-like in-memory + sessionStorage) ──

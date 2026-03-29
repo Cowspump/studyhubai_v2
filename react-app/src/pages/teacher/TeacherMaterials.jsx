@@ -1,6 +1,6 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useLang } from '../../context/LanguageContext';
-import { teacherApi, normalizeListResponse } from '../../utils/api';
+import { teacherApi, normalizeListResponse, resolveApiUrl } from '../../utils/api';
 import MaterialModal from '../../components/MaterialModal';
 import Spinner from '../../components/Spinner';
 
@@ -16,6 +16,7 @@ export default function TeacherMaterials() {
   const [selectedGroups, setSelectedGroups] = useState([]);
   const [previewMaterial, setPreviewMaterial] = useState(null);
   const [loading, setLoading] = useState(true);
+  const openReqIdRef = useRef(0);
 
   const typeIcon = { pdf: '📄', video: '🎬', link: '🔗', file: '📁' };
 
@@ -75,10 +76,21 @@ export default function TeacherMaterials() {
   };
 
   const openMaterial = async (m) => {
+    const reqId = ++openReqIdRef.current;
+    setPreviewMaterial({ ...m, url: null, file_name: m.file_name, _loading: true });
     try {
       const { url: materialUrl, file_name } = await teacherApi.getMaterialUrl(m.id);
-      setPreviewMaterial({ ...m, url: materialUrl, file_name: file_name || m.file_name });
-    } catch { /* ignore */ }
+      if (openReqIdRef.current !== reqId) return;
+      setPreviewMaterial({
+        ...m,
+        url: resolveApiUrl(materialUrl),
+        file_name: file_name || m.file_name,
+        _loading: false,
+      });
+    } catch {
+      if (openReqIdRef.current !== reqId) return;
+      setPreviewMaterial({ ...m, url: resolveApiUrl(m.url), file_name: m.file_name, _loading: false });
+    }
   };
 
   const handleDelete = async (id) => {

@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLang } from '../../context/LanguageContext';
-import { teacherApi, normalizeListResponse } from '../../utils/api';
+import { teacherApi, normalizeListResponse, resolveApiUrl } from '../../utils/api';
 import { generateTest } from '../../utils/openai';
 import Spinner from '../../components/Spinner';
 
@@ -102,7 +102,7 @@ export default function TeacherTests() {
 
     try {
       const { url: lectureUrl } = await teacherApi.getMaterialUrl(parseInt(aiLecture));
-      const generatedQuestions = await generateTest(lectureUrl, aiNumQ, apiKey);
+      const generatedQuestions = await generateTest(resolveApiUrl(lectureUrl), aiNumQ, apiKey);
       const title = aiTitle || t('aiTestDefault');
 
       // Pass data via state to preview page
@@ -129,7 +129,9 @@ export default function TeacherTests() {
           <label>{t('selectLecture')}</label>
           <select value={aiLecture} onChange={(e) => setAiLecture(e.target.value)} required>
             <option value="">{t('chooseLecture')}</option>
-            {materials.map((m) => (
+            {materials
+              .filter((m) => m.type === 'pdf')
+              .map((m) => (
               <option key={m.id} value={m.id}>{m.title}</option>
             ))}
           </select>

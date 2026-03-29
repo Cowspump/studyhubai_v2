@@ -1,11 +1,13 @@
 import { useLang } from '../context/LanguageContext';
+import { resolveApiUrl } from '../utils/api';
 
 export default function MaterialModal({ material, onClose }) {
   const { t } = useLang();
 
-  const { url, title, type } = material;
+  const { url, title } = material;
   const fileName = material.file_name || title;
-  const ext = fileName?.split('.').pop().toLowerCase() || url?.split('.').pop().toLowerCase() || '';
+  const resolvedUrl = resolveApiUrl(url);
+  const ext = fileName?.split('.').pop().toLowerCase() || resolvedUrl?.split('.').pop().toLowerCase() || '';
   const isPdf = ext === 'pdf';
   const isImage = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'bmp'].includes(ext);
   const canPreview = isPdf || isImage;
@@ -18,6 +20,11 @@ export default function MaterialModal({ material, onClose }) {
     pdf: { icon: '📄', label: t('pdfFile') },
   };
   const info = extInfo[ext] || { icon: '📁', label: ext.toUpperCase() };
+
+  const viewerUrl =
+    isPdf && resolvedUrl && (resolvedUrl.startsWith('http://') || resolvedUrl.startsWith('https://'))
+      ? `https://docs.google.com/gview?embedded=1&url=${encodeURIComponent(resolvedUrl)}`
+      : resolvedUrl;
 
   return (
     <div
@@ -39,20 +46,36 @@ export default function MaterialModal({ material, onClose }) {
           }}>
             <strong style={{ fontSize: '1.1rem' }}>{title}</strong>
             <div>
-              <a href={url} download={fileName} className="btn btn-sm" style={{ marginRight: 8 }}>
-                {t('download')}
-              </a>
+              {resolvedUrl && (
+                <>
+                  <a href={resolvedUrl} target="_blank" rel="noreferrer" className="btn btn-sm" style={{ marginRight: 8 }}>
+                    {t('open')}
+                  </a>
+                  <a href={resolvedUrl} download={fileName} className="btn btn-sm" style={{ marginRight: 8 }}>
+                    {t('download')}
+                  </a>
+                </>
+              )}
+              {!resolvedUrl && (
+                <span style={{ marginRight: 8, color: '#666', fontSize: '0.9rem' }}>
+                  {t('loading')}
+                </span>
+              )}
               <button className="btn btn-sm" onClick={onClose} style={{ background: '#e74c3c', color: '#fff' }}>
                 {t('closeModal')}
               </button>
             </div>
           </div>
-          {isImage ? (
+          {!resolvedUrl ? (
+            <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f5f5f5' }}>
+              <div className="spinner" />
+            </div>
+          ) : isImage ? (
             <div style={{ flex: 1, overflow: 'auto', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16, background: '#f5f5f5' }}>
-              <img src={url} alt={title} style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain', borderRadius: 8 }} />
+              <img src={resolvedUrl} alt={title} style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain', borderRadius: 8 }} />
             </div>
           ) : (
-            <iframe src={url} style={{ flex: 1, border: 'none', width: '100%' }} title={title} />
+            <iframe src={viewerUrl} style={{ flex: 1, border: 'none', width: '100%' }} title={title} />
           )}
         </div>
       ) : (
@@ -61,9 +84,18 @@ export default function MaterialModal({ material, onClose }) {
           <h3 style={{ margin: '0 0 8px' }}>{title}</h3>
           <p style={{ color: '#666', margin: '0 0 4px' }}>{info.label}</p>
           <div style={{ display: 'flex', gap: 12, justifyContent: 'center', marginTop: 24 }}>
-            <a href={url} download={fileName} className="btn btn-primary" style={{ padding: '10px 24px', textDecoration: 'none' }}>
-              {t('downloadFile')}
-            </a>
+            {resolvedUrl ? (
+              <>
+                <a href={resolvedUrl} target="_blank" rel="noreferrer" className="btn" style={{ padding: '10px 24px', textDecoration: 'none' }}>
+                  {t('open')}
+                </a>
+                <a href={resolvedUrl} download={fileName} className="btn btn-primary" style={{ padding: '10px 24px', textDecoration: 'none' }}>
+                  {t('downloadFile')}
+                </a>
+              </>
+            ) : (
+              <span style={{ padding: '10px 24px', color: '#666' }}>{t('loading')}</span>
+            )}
             <button onClick={onClose} className="btn" style={{ padding: '10px 24px', background: '#e74c3c', color: '#fff', border: 'none', borderRadius: 8, cursor: 'pointer' }}>
               {t('closeModal')}
             </button>

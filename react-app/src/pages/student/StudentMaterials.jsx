@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useLang } from '../../context/LanguageContext';
-import { studentApi } from '../../utils/api';
+import { studentApi, resolveApiUrl, normalizeListResponse } from '../../utils/api';
 import MaterialModal from '../../components/MaterialModal';
 import Spinner from '../../components/Spinner';
 
@@ -9,10 +9,11 @@ export default function StudentMaterials() {
   const [materials, setMaterials] = useState([]);
   const [previewMaterial, setPreviewMaterial] = useState(null);
   const [loading, setLoading] = useState(true);
+  const openReqIdRef = useRef(0);
 
   useEffect(() => {
     studentApi.getMaterials()
-      .then((data) => setMaterials(data.items || []))
+      .then((data) => setMaterials(normalizeListResponse(data)))
       .catch(() => setMaterials([]))
       .finally(() => setLoading(false));
   }, []);
@@ -26,9 +27,13 @@ export default function StudentMaterials() {
   });
 
   const openMaterial = async (m) => {
+    const reqId = ++openReqIdRef.current;
+    setPreviewMaterial({ ...m, url: null, file_name: m.file_name, _loading: true });
     try {
       const { url: materialUrl, file_name } = await studentApi.getMaterialUrl(m.id);
-      setPreviewMaterial({ ...m, url: materialUrl, file_name: file_name || m.file_name });
+      // ignore outdated requests
+      if (openReqIdRef.current !== reqId) return;
+      setPreviewMaterial({ ...m, url: resolveApiUrl(materialUrl), file_name: file_name || m.file_name, _loading: false });
     } catch { /* ignore */ }
   };
 
